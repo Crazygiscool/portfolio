@@ -14,7 +14,7 @@ import {
 import { home } from "./index";
 
 // IMPORTANT: Replace with your own domain address - it's used for SEO in meta tags and schema
-const baseURL: string = "https://demo.magic-portfolio.com";
+const baseURL: string = "https://crazyg.is-a.dev";
 
 const routes: RoutesConfig = {
   "/": true,
@@ -187,10 +187,10 @@ const mailchimp: MailchimpConfig = {
 // default schema data
 const schema: SchemaConfig = {
   logo: "",
-  type: "Organization",
-  name: "Once UI",
+  type: "Individual",
+  name: "Crazygiscool",
   description: home.description,
-  email: "lorant@once-ui.com",
+  email: "crazygiscool@proton.me",
 };
 
 // social links

@@ -13,7 +13,7 @@ const person: Person = {
 };
 
 const newsletter: Newsletter = {
-  display: true,
+  display: false,
   title: <>Subscribe to {person.firstName}'s Newsletter</>,
   description: <>My weekly newsletter about creativity and engineering</>,
 };
@@ -60,14 +60,7 @@ const home: Home = {
   },
   subline: (
     <>
-      I'm Selene, a design engineer at{" "}
-      <Logo
-        dark
-        icon="/trademarks/wordmark-dark.svg"
-        style={{ display: "inline-flex", top: "0.25em", marginLeft: "-0.25em" }}
-      />
-      , where I craft intuitive
-      <br /> user experiences. After hours, I build my own projects.
+      I'm Crazygiscool, a self taught developer always eager to learn
     </>
   ),
 };
@@ -85,7 +78,7 @@ const about: About = {
     display: true,
   },
   calendar: {
-    display: true,
+    display: false,
     link: "https://cal.com",
   },
   intro: {
@@ -93,14 +86,12 @@ const about: About = {
     title: "Introduction",
     description: (
       <>
-        Selene is a Jakarta-based design engineer with a passion for transforming complex challenges
-        into simple, elegant design solutions. Her work spans digital interfaces, interactive
-        experiences, and the convergence of design and technology.
+        Crazygiscool is a modular systems architect driven by the pursuit of elegant solutions to complex technical challenges. They specialize in turning fragmentation into cohesion, designing reproducible workflows that strip away unnecessary complexity. Whether it’s orchestrating servers, refining build pipelines, or bridging low‑level kernels with expressive interfaces, their solutions are always modular, traceable, and built for remixing. At the core of their work is a commitment to clarity: transforming intricate problems into systems that are simple to use, resilient to change, and expressive in feedback.
       </>
     ),
   },
   work: {
-    display: true, // set to false to hide this section
+    display: false, // not working yet
     title: "Work Experience",
     experiences: [
       {
@@ -146,7 +137,7 @@ const about: About = {
     ],
   },
   studies: {
-    display: true, // set to false to hide this section
+    display: false, // set to false to hide this section
     title: "Studies",
     institutions: [
       {
@@ -166,7 +157,7 @@ const about: About = {
       {
         title: "Figma",
         description: (
-          <>Able to prototype in Figma with Once UI with unnatural speed.</>
+          <>Able to prototype in Figma</>
         ),
         tags: [
           {
@@ -174,26 +165,14 @@ const about: About = {
             icon: "figma",
           },
         ],
+
         // optional: leave the array empty if you don't want to display images
-        images: [
-          {
-            src: "/images/projects/project-01/cover-02.jpg",
-            alt: "Project image",
-            width: 16,
-            height: 9,
-          },
-          {
-            src: "/images/projects/project-01/cover-03.jpg",
-            alt: "Project image",
-            width: 16,
-            height: 9,
-          },
-        ],
+        images: [],
       },
       {
         title: "Next.js",
         description: (
-          <>Building next gen apps with Next.js + Once UI + Supabase.</>
+          <>Some what ok with the language</>
         ),
         tags: [
           {
@@ -204,20 +183,9 @@ const about: About = {
             name: "Next.js",
             icon: "nextjs",
           },
-          {
-            name: "Supabase",
-            icon: "supabase",
-          },
         ],
         // optional: leave the array empty if you don't want to display images
-        images: [
-          {
-            src: "/images/projects/project-01/cover-04.jpg",
-            alt: "Project image",
-            width: 16,
-            height: 9,
-          },
-        ],
+        images: [],
       },  
     ],
   },
