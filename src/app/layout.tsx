@@ -1,3 +1,5 @@
+import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import "@once-ui-system/core/css/styles.css";
 import "@once-ui-system/core/css/tokens.css";
 import "@/resources/custom.css";
@@ -156,6 +158,8 @@ export default async function RootLayout({
             />
           </RevealFx>
           <Flex fillWidth minHeight="16" s={{ hide: true }} />
+          <Analytics/>
+          <SpeedInsights/>
           <Header />
           <Flex zIndex={0} fillWidth padding="l" horizontal="center" flex={1}>
             <Flex horizontal="center" fillWidth minHeight="0">
