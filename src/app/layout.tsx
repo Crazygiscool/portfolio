@@ -47,6 +47,7 @@ export default async function RootLayout({
       )}
     >
       <head>
+        <meta name="google-adsense-account" content="ca-pub-5785917361742787"></meta>
         <script
           id="theme-init"
           dangerouslySetInnerHTML={{
