@@ -168,7 +168,7 @@ export default async function RootLayout({
           <Footer />
           <Analytics />
           <SpeedInsights />
-          <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5785917361742787" crossOrigin="anonymous"></script>
+          <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5785917361742787" crossOrigin="anonymous"/>
         </Column>
       </Providers>
     </Flex>
