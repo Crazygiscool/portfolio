@@ -1,0 +1,159 @@
+---
+import '../styles/global.css';
+
+const projects = [
+  {
+    name: 'everything',
+    description: 'Minecraft Spigot/Paper plugin with features for server optimization, custom commands, and enhanced gameplay mechanics.',
+    language: 'Java',
+    stars: 4,
+    url: 'https://github.com/crazygiscool/everything',
+    color: '#ea580c',
+  },
+  {
+    name: 'kingdom-RTS',
+    description: 'Real-time strategy game set in a medieval world with a retro aesthetic. Built with Godot engine.',
+    language: 'GDScript',
+    stars: 1,
+    url: 'https://github.com/Crazygiscool/kingdom-RTS',
+    color: '#059669',
+  },
+  {
+    name: 'Lumen',
+    description: 'A journaling app to "Illuminate your inner world." Built with Flutter and Dart.',
+    language: 'Dart',
+    stars: 0,
+    url: 'https://github.com/Crazygiscool/Lumen',
+    color: '#06b6d4',
+  },
+  {
+    name: 'Stoic-Converter',
+    description: 'Converting stoic journals to many other formats. Python-based utility script.',
+    language: 'Python',
+    stars: 0,
+    url: 'https://github.com/Crazygiscool/Stoic-Converter',
+    color: '#eab308',
+  },
+  {
+    name: 'ScaleMaster',
+    description: 'Lazy generator for music scales. TypeScript powered web tool.',
+    language: 'TypeScript',
+    stars: 0,
+    url: 'https://github.com/Crazygiscool/ScaleMaster',
+    color: '#3b82f6',
+  },
+  {
+    name: 'register',
+    description: 'Grab your own sweet-looking .is-a.dev subdomain. Simple web tool.',
+    language: 'JavaScript',
+    stars: 0,
+    url: 'https://github.com/Crazygiscool/register',
+    color: '#a855f7',
+  },
+];
+
+const skills = [
+  { name: 'Java', level: 85, color: '#ea580c' },
+  { name: 'GDScript', level: 80, color: '#059669' },
+  { name: 'Dart', level: 60, color: '#06b6d4' },
+  { name: 'Python', level: 70, color: '#eab308' },
+  { name: 'TypeScript', level: 65, color: '#3b82f6' },
+  { name: 'JavaScript', level: 70, color: '#eab308' },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="Portfolio for Crazygiscool - Developer" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Crazygiscool - Developer</title>
+  </head>
+  <body>
+    <nav>
+      <div class="container">
+        <a href="#" class="logo">crazyg.is-a.dev</a>
+        <div class="links">
+          <a href="#projects">Projects</a>
+          <a href="#skills">Skills</a>
+          <a href="#contact">Contact</a>
+        </div>
+      </div>
+    </nav>
+
+    <main>
+      <section class="hero">
+        <div class="hero-content">
+          <p class="hero-greeting">Hello There!</p>
+          <h1>I am <span>Crazygiscool</span></h1>
+          <p>Developer passionate about Minecraft plugins, Godot games, and building useful tools.</p>
+          <div class="hero-buttons">
+            <a href="https://github.com/crazygiscool" class="btn btn-primary">GitHub</a>
+            <a href="#projects" class="btn btn-secondary">View Projects</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="projects" class="section section-alt">
+        <div class="container">
+          <h2>Projects</h2>
+          <p class="section-subtitle">Things I've built</p>
+          <div class="projects-grid">
+            {projects.map((project) => (
+              <a href={project.url} target="_blank" rel="noopener noreferrer" class="project-card">
+                <div class="project-header">
+                  <span class="project-dot" style={`background: ${project.color}`}></span>
+                  <span class="project-name">{project.name}</span>
+                  {project.stars > 0 && <span class="project-stars">★ {project.stars}</span>}
+                </div>
+                <p class="project-desc">{project.description}</p>
+                <span class="project-lang">{project.language}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="skills" class="section">
+        <div class="container">
+          <h2>Skills</h2>
+          <p class="section-subtitle">Technologies I work with</p>
+          <div class="skills-list">
+            {skills.map((skill) => (
+              <div class="skill">
+                <div class="skill-header">
+                  <span>{skill.name}</span>
+                  <span style="color: #9ca3af">{skill.level}%</span>
+                </div>
+                <div class="skill-bar">
+                  <div class="skill-fill" style={`width: ${skill.level}%; background: ${skill.color}`}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" class="contact">
+        <div class="container">
+          <h2>Get in Touch</h2>
+          <p class="section-subtitle">Feel free to reach out</p>
+          <div class="contact-links">
+            <a href="mailto:crazygiscool@proton.me" class="contact-btn">
+              crazygiscool@proton.me
+            </a>
+            <a href="https://github.com/crazygiscool" class="contact-btn">
+              GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>© {new Date().getFullYear()} Crazygiscool</p>
+    </footer>
+  </body>
+</html>
