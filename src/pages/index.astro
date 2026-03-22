@@ -34,12 +34,19 @@ const contributionsRes = await fetch('https://github-contributions-api.jogruber.
 const contributions = contributionsRes.ok ? await contributionsRes.json() : { contributions: [], totalContributions: 0 };
 
 const contributionsData = contributions.contributions || [];
-const totalContributions = contributions.totalContributions || 0;
+
+const oneYearAgo = new Date();
+oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+const oneYearAgoStr = oneYearAgo.toISOString().split('T')[0];
+
+const recentContributions = contributionsData.filter((day: any) => day.date >= oneYearAgoStr);
+
+const totalContributions = recentContributions.reduce((sum: number, day: any) => sum + day.count, 0);
 
 const weeksData: { date: string; count: number; level: number }[][] = [];
 let currentWeek: { date: string; count: number; level: number }[] = [];
 
-contributionsData.forEach((day: any, index: number) => {
+recentContributions.forEach((day: any) => {
   currentWeek.push(day);
   if (currentWeek.length === 7) {
     weeksData.push(currentWeek);
@@ -50,15 +57,28 @@ if (currentWeek.length > 0) {
   weeksData.push(currentWeek);
 }
 
+weeksData.reverse();
+const MAX_WEEKS = 20;
+const displayWeeks = weeksData.slice(-MAX_WEEKS);
+
 const wakaKey = import.meta.env.WAKATIME_API_KEY;
 let wakaStats = null;
+let wakaAllTimeStats = null;
 
 if (wakaKey) {
   const wakaRes = await fetch('https://wakatime.com/api/v1/users/current/stats/last_7_days', {
     headers: { 'Authorization': `Basic ${btoa(wakaKey)}` }
   });
   wakaStats = await wakaRes.json();
+  
+  const wakaAllRes = await fetch('https://wakatime.com/api/v1/users/current/stats/all_time', {
+    headers: { 'Authorization': `Basic ${btoa(wakaKey)}` }
+  });
+  wakaAllTimeStats = await wakaAllRes.json();
 }
+
+const starredRes = await fetch('https://api.github.com/users/crazygiscool/starred?per_page=30&sort=updated');
+const starredRepos = starredRes.ok ? await starredRes.json() : [];
 
 const skills = [
   { name: 'Java', level: 85, color: '#ea580c' },
@@ -85,86 +105,52 @@ const skills = [
         <a href="#" class="logo">crazyg.is-a.dev</a>
         <div class="links">
           <a href="#projects">Projects</a>
-          <a href="#stats">Stats</a>
-          <a href="#skills">Skills</a>
+          <a href="#starred">Starred</a>
+          <a href="#wakatime">WakaTime</a>
           <a href="#contact">Contact</a>
         </div>
       </div>
     </nav>
 
     <main>
-      <section class="hero">
-        <div class="hero-content">
+      <section class="hero-split">
+        <div class="hero-left">
           <p class="hero-greeting">Hello There!</p>
           <h1>I am <span>Crazygiscool</span></h1>
-          <p>Developer passionate about Minecraft plugins, Godot games, and building useful tools.</p>
+          <p class="hero-bio">Developer passionate about Minecraft plugins, Godot games, and building useful tools.</p>
           <div class="hero-buttons">
             <a href="https://github.com/crazygiscool" class="btn btn-primary">GitHub</a>
             <a href="#projects" class="btn btn-secondary">View Projects</a>
           </div>
         </div>
-      </section>
-
-      <section id="stats" class="section section-alt">
-        <div class="container">
-          <h2>Stats</h2>
-          <p class="section-subtitle">Coding activity</p>
-          
-          <div class="stats-grid">
-            <div class="stats-card">
-              <div class="stats-header">
-                <h3>GitHub Contributions</h3>
-                <span class="stats-total">{totalContributions} total</span>
-              </div>
-              <div class="contribution-graph">
-                {weeksData.map((week) => (
-                  <div class="week">
-                    {week.map((day) => (
-                      <div 
-                        class={`day level-${day.level}`}
-                        title={`${day.date}: ${day.count} contributions`}
-                      ></div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-              <div class="legend">
-                <span>Less</span>
-                <div class="day level-0"></div>
-                <div class="day level-1"></div>
-                <div class="day level-2"></div>
-                <div class="day level-3"></div>
-                <div class="day level-4"></div>
-                <span>More</span>
-              </div>
+        
+        <div class="hero-right">
+          <div class="stats-card">
+            <div class="stats-header">
+              <h3>GitHub Contributions</h3>
+              <span class="stats-total">{totalContributions} total</span>
             </div>
-
-            {wakaStats && wakaStats.data && (
-              <div class="stats-card">
-                <div class="stats-header">
-                  <h3>WakaTime (7 days)</h3>
+            <div class="contribution-graph">
+              {displayWeeks.map((week) => (
+                <div class="week">
+                  {week.map((day) => (
+                    <div 
+                      class={`day level-${day.level}`}
+                      title={`${day.date}: ${day.count} contributions`}
+                    ></div>
+                  ))}
                 </div>
-                <div class="waka-stats">
-                  <div class="waka-main">
-                    <span class="waka-time">{wakaStats.data.total_time_text}</span>
-                    <span class="waka-label">coding time</span>
-                  </div>
-                  <div class="waka-languages">
-                    {wakaStats.data.languages.slice(0, 5).map((lang: any) => (
-                      <div class="waka-lang">
-                        <div class="waka-lang-header">
-                          <span>{lang.name}</span>
-                          <span>{lang.percent.toFixed(1)}%</span>
-                        </div>
-                        <div class="waka-lang-bar">
-                          <div class="waka-lang-fill" style={`width: ${lang.percent}%`}></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+              ))}
+            </div>
+            <div class="legend">
+              <span>Less</span>
+              <div class="day level-0"></div>
+              <div class="day level-1"></div>
+              <div class="day level-2"></div>
+              <div class="day level-3"></div>
+              <div class="day level-4"></div>
+              <span>More</span>
+            </div>
           </div>
         </div>
       </section>
@@ -189,25 +175,183 @@ const skills = [
         </div>
       </section>
 
-      <section id="skills" class="section section-alt">
+      <section id="starred" class="section section-alt">
         <div class="container">
-          <h2>Skills</h2>
-          <p class="section-subtitle">Technologies I work with</p>
-          <div class="skills-list">
-            {skills.map((skill) => (
-              <div class="skill">
-                <div class="skill-header">
-                  <span>{skill.name}</span>
-                  <span style="color: #9ca3af">{skill.level}%</span>
-                </div>
-                <div class="skill-bar">
-                  <div class="skill-fill" style={`width: ${skill.level}%; background: ${skill.color}`}></div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <h2>Starred Repos</h2>
+          <p class="section-subtitle">Recently starred</p>
+          {starredRepos.length > 0 ? (
+            <div class="projects-grid">
+              {starredRepos.slice(0, 6).map((repo: any) => (
+                <a href={repo.html_url} target="_blank" rel="noopener noreferrer" class="project-card">
+                  <div class="project-header">
+                    <span class="project-name">{repo.name}</span>
+                    <span class="project-stars">★ {repo.stargazers_count}</span>
+                  </div>
+                  <p class="project-desc">{repo.description || 'No description'}</p>
+                  <span class="project-lang">{repo.language || 'Code'}</span>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p class="text-center text-gray-500">No starred repositories</p>
+          )}
         </div>
       </section>
+
+      {wakaStats && wakaStats.data && (
+        <section id="wakatime" class="section">
+          <div class="container">
+            <h2>WakaTime</h2>
+            <p class="section-subtitle">Coding statistics</p>
+            
+            <div class="waka-full-grid">
+              <div class="waka-card">
+                <h3>7 Days Summary</h3>
+                <div class="waka-stats-grid">
+                  <div class="waka-stat-box">
+                    <span class="waka-stat-value">{wakaStats.data.total_time_text}</span>
+                    <span class="waka-stat-label">Total Time</span>
+                  </div>
+                  <div class="waka-stat-box">
+                    <span class="waka-stat-value">{wakaStats.data.total_daily_average_time_text}</span>
+                    <span class="waka-stat-label">Daily Average</span>
+                  </div>
+                  <div class="waka-stat-box">
+                    <span class="waka-stat-value">{wakaStats.data.best_day?.date || '-'}</span>
+                    <span class="waka-stat-label">Best Day</span>
+                  </div>
+                  <div class="waka-stat-box">
+                    <span class="waka-stat-value">{wakaStats.data.best_day?.text || '-'}</span>
+                    <span class="waka-stat-label">Best Day Time</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="waka-card">
+                <h3>Languages</h3>
+                <div class="pie-container">
+                  <div 
+                    class="pie-chart"
+                    style={(() => {
+                      const topLangs = wakaStats.data.languages.slice(0, 8);
+                      const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
+                      let gradient = '';
+                      let currentDeg = 0;
+                      topLangs.forEach((lang: any, i: number) => {
+                        const deg = (lang.percent / 100) * 360;
+                        gradient += `${colors[i % colors.length]} ${currentDeg}deg ${currentDeg + deg}deg, `;
+                        currentDeg += deg;
+                      });
+                      return `background: conic-gradient(${gradient.slice(0, -2)});`;
+                    })()}
+                  >
+                    <div class="pie-center">
+                      <span class="pie-center-text">{wakaStats.data.languages[0]?.name || '-'}</span>
+                      <span class="pie-center-time">{wakaStats.data.languages[0]?.text || '-'}</span>
+                    </div>
+                  </div>
+                  <div class="pie-legend">
+                    {wakaStats.data.languages.slice(0, 8).map((lang: any, i: number) => {
+                      const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
+                      return (
+                        <div class="pie-legend-item">
+                          <span class="pie-legend-color" style={`background: ${colors[i % colors.length]}`}></span>
+                          <span class="pie-legend-name">{lang.name}</span>
+                          <span class="pie-legend-percent">{lang.percent.toFixed(1)}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <div class="waka-card">
+                <h3>Editors</h3>
+                <div class="waka-languages-full">
+                  {wakaStats.data.editors?.map((editor: any) => (
+                    <div class="waka-lang-row">
+                      <div class="waka-lang-info">
+                        <span class="waka-lang-name">{editor.name}</span>
+                        <span class="waka-lang-time">{editor.text}</span>
+                      </div>
+                      <div class="waka-lang-bar-wrap">
+                        <div class="waka-lang-bar">
+                          <div class="waka-lang-fill" style={`width: ${editor.percent}%`}></div>
+                        </div>
+                        <span class="waka-lang-percent">{editor.percent.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  )) || <p class="text-gray-500">No editor data</p>}
+                </div>
+              </div>
+
+              <div class="waka-card">
+                <h3>Operating Systems</h3>
+                <div class="waka-languages-full">
+                  {wakaStats.data.operating_systems?.map((os: any) => (
+                    <div class="waka-lang-row">
+                      <div class="waka-lang-info">
+                        <span class="waka-lang-name">{os.name}</span>
+                        <span class="waka-lang-time">{os.text}</span>
+                      </div>
+                      <div class="waka-lang-bar-wrap">
+                        <div class="waka-lang-bar">
+                          <div class="waka-lang-fill" style={`width: ${os.percent}%`}></div>
+                        </div>
+                        <span class="waka-lang-percent">{os.percent.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  )) || <p class="text-gray-500">No OS data</p>}
+                </div>
+              </div>
+
+              <div class="waka-card">
+                <h3>Categories</h3>
+                <div class="waka-languages-full">
+                  {wakaStats.data.categories?.map((cat: any) => (
+                    <div class="waka-lang-row">
+                      <div class="waka-lang-info">
+                        <span class="waka-lang-name">{cat.name}</span>
+                        <span class="waka-lang-time">{cat.text}</span>
+                      </div>
+                      <div class="waka-lang-bar-wrap">
+                        <div class="waka-lang-bar">
+                          <div class="waka-lang-fill" style={`width: ${cat.percent}%`}></div>
+                        </div>
+                        <span class="waka-lang-percent">{cat.percent.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  )) || <p class="text-gray-500">No category data</p>}
+                </div>
+              </div>
+
+              {wakaAllTimeStats && wakaAllTimeStats.data && (
+                <div class="waka-card waka-all-time">
+                  <h3>All Time</h3>
+                  <div class="waka-stats-grid">
+                    <div class="waka-stat-box">
+                      <span class="waka-stat-value">{wakaAllTimeStats.data.total_time_text}</span>
+                      <span class="waka-stat-label">Total Time</span>
+                    </div>
+                    <div class="waka-stat-box">
+                      <span class="waka-stat-value">{wakaAllTimeStats.data.total_coding_time_text || '-'}</span>
+                      <span class="waka-stat-label">Coding Time</span>
+                    </div>
+                    <div class="waka-stat-box">
+                      <span class="waka-stat-value">{wakaAllTimeStats.data.achievements_total || 0}</span>
+                      <span class="waka-stat-label">Achievements</span>
+                    </div>
+                    <div class="waka-stat-box">
+                      <span class="waka-stat-value">{wakaAllTimeStats.data.daily_average_time_text || '-'}</span>
+                      <span class="waka-stat-label">Daily Average</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section id="contact" class="contact">
         <div class="container">
