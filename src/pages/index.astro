@@ -30,6 +30,36 @@ const projects = repos
     color: colorMap[r.language] || '#a855f7',
   }));
 
+const contributionsRes = await fetch('https://github-contributions-api.jogruber.de/v4/crazygiscool');
+const contributions = contributionsRes.ok ? await contributionsRes.json() : { contributions: [], totalContributions: 0 };
+
+const contributionsData = contributions.contributions || [];
+const totalContributions = contributions.totalContributions || 0;
+
+const weeksData: { date: string; count: number; level: number }[][] = [];
+let currentWeek: { date: string; count: number; level: number }[] = [];
+
+contributionsData.forEach((day: any, index: number) => {
+  currentWeek.push(day);
+  if (currentWeek.length === 7) {
+    weeksData.push(currentWeek);
+    currentWeek = [];
+  }
+});
+if (currentWeek.length > 0) {
+  weeksData.push(currentWeek);
+}
+
+const wakaKey = import.meta.env.WAKATIME_API_KEY;
+let wakaStats = null;
+
+if (wakaKey) {
+  const wakaRes = await fetch('https://wakatime.com/api/v1/users/current/stats/last_7_days', {
+    headers: { 'Authorization': `Basic ${btoa(wakaKey)}` }
+  });
+  wakaStats = await wakaRes.json();
+}
+
 const skills = [
   { name: 'Java', level: 85, color: '#ea580c' },
   { name: 'GDScript', level: 80, color: '#059669' },
@@ -55,6 +85,7 @@ const skills = [
         <a href="#" class="logo">crazyg.is-a.dev</a>
         <div class="links">
           <a href="#projects">Projects</a>
+          <a href="#stats">Stats</a>
           <a href="#skills">Skills</a>
           <a href="#contact">Contact</a>
         </div>
@@ -74,7 +105,71 @@ const skills = [
         </div>
       </section>
 
-      <section id="projects" class="section section-alt">
+      <section id="stats" class="section section-alt">
+        <div class="container">
+          <h2>Stats</h2>
+          <p class="section-subtitle">Coding activity</p>
+          
+          <div class="stats-grid">
+            <div class="stats-card">
+              <div class="stats-header">
+                <h3>GitHub Contributions</h3>
+                <span class="stats-total">{totalContributions} total</span>
+              </div>
+              <div class="contribution-graph">
+                {weeksData.map((week) => (
+                  <div class="week">
+                    {week.map((day) => (
+                      <div 
+                        class={`day level-${day.level}`}
+                        title={`${day.date}: ${day.count} contributions`}
+                      ></div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              <div class="legend">
+                <span>Less</span>
+                <div class="day level-0"></div>
+                <div class="day level-1"></div>
+                <div class="day level-2"></div>
+                <div class="day level-3"></div>
+                <div class="day level-4"></div>
+                <span>More</span>
+              </div>
+            </div>
+
+            {wakaStats && wakaStats.data && (
+              <div class="stats-card">
+                <div class="stats-header">
+                  <h3>WakaTime (7 days)</h3>
+                </div>
+                <div class="waka-stats">
+                  <div class="waka-main">
+                    <span class="waka-time">{wakaStats.data.total_time_text}</span>
+                    <span class="waka-label">coding time</span>
+                  </div>
+                  <div class="waka-languages">
+                    {wakaStats.data.languages.slice(0, 5).map((lang: any) => (
+                      <div class="waka-lang">
+                        <div class="waka-lang-header">
+                          <span>{lang.name}</span>
+                          <span>{lang.percent.toFixed(1)}%</span>
+                        </div>
+                        <div class="waka-lang-bar">
+                          <div class="waka-lang-fill" style={`width: ${lang.percent}%`}></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section id="projects" class="section">
         <div class="container">
           <h2>Projects</h2>
           <p class="section-subtitle">Things I've built</p>
@@ -94,7 +189,7 @@ const skills = [
         </div>
       </section>
 
-      <section id="skills" class="section">
+      <section id="skills" class="section section-alt">
         <div class="container">
           <h2>Skills</h2>
           <p class="section-subtitle">Technologies I work with</p>
