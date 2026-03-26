@@ -122,8 +122,20 @@ main {
 #mcScrollTrack {
   position: absolute;
   height: 245px;
-  width: 200%;
-  animation: scrollRight 50s linear infinite;
+  width: var(--track-width, 2000px);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  animation: scrollSeamless 60s linear infinite;
+}
+
+@keyframes scrollSeamless {
+  0% {
+    transform: translate(-50%, -50%);
+  }
+  100% {
+    transform: translate(calc(-50% - var(--lane-width, 1000px)), -50%);
+  }
 }
 
 .mc-scroll-lane {
@@ -140,7 +152,7 @@ main {
 }
 
 .mc-scroll-lane:last-child {
-  left: var(--lane-width, 100%);
+  left: var(--lane-width, 1000px);
 }
 
 .mc-bg-block {
@@ -178,15 +190,6 @@ main {
 .mc-bg-block.level-4 {
   box-shadow: 0 0 18px rgba(251, 191, 36, 0.8);
   animation: glow 2s ease-in-out infinite alternate;
-}
-
-@keyframes scrollRight {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
 }
 
 @keyframes glow {
@@ -1494,63 +1497,98 @@ footer {
   inset: 0;
 }
 
-/* Background Selector */
-.bg-selector {
+/* Background Dropdown */
+.bg-dropdown {
   position: fixed;
   top: 80px;
   right: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   z-index: 1000;
-  padding: 12px;
-  background: rgba(10, 10, 15, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  border: 1px solid rgba(168, 85, 247, 0.3);
 }
 
-.bg-btn {
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #9ca3af;
-  cursor: pointer;
+.bg-dropdown-trigger {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 6px;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 8px;
+  color: #e5e5e5;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.bg-btn:hover {
-  background: rgba(168, 85, 247, 0.3);
-  color: #fff;
-  transform: scale(1.1);
+.bg-dropdown-trigger:hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.5);
 }
 
-.bg-btn.active {
-  background: #a855f7;
-  color: #fff;
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.5);
+.bg-dropdown-arrow {
+  width: 12px;
+  height: 12px;
+  transition: transform 0.2s ease;
 }
 
-.bg-btn svg {
+.bg-dropdown.open .bg-dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.bg-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  min-width: 160px;
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.bg-dropdown.open .bg-dropdown-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.bg-dropdown-item {
+  display: block;
   width: 100%;
-  height: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bg-dropdown-item:hover {
+  background: rgba(168, 85, 247, 0.2);
+  color: #e5e5e5;
+}
+
+.bg-dropdown-item.active {
+  background: rgba(168, 85, 247, 0.3);
+  color: #a855f7;
+  font-weight: 500;
 }
 
 @media (max-width: 768px) {
-  .bg-selector {
+  .bg-dropdown {
     top: auto;
     bottom: 20px;
     right: 10px;
-    flex-direction: row;
-    flex-wrap: wrap;
-    max-width: 200px;
-    justify-content: center;
   }
 }
 

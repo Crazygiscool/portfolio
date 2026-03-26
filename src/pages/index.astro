@@ -231,92 +231,25 @@ const skills = [
       </div>
     </nav>
 
-    <div id="bgSelector">
-      <button class="bg-btn active" data-bg="0" title="Fireflies">
-        <svg viewBox="0 0 16 16" fill="currentColor">
-          <circle cx="4" cy="4" r="2" opacity="0.8"/>
-          <circle cx="12" cy="6" r="1.5" opacity="0.6"/>
-          <circle cx="6" cy="12" r="1" opacity="0.7"/>
-          <circle cx="10" cy="10" r="2" opacity="0.5"/>
-          <circle cx="2" cy="10" r="1" opacity="0.6"/>
+    <div class="bg-dropdown" id="bgDropdown">
+      <button class="bg-dropdown-trigger" id="bgDropdownTrigger">
+        <span class="bg-dropdown-label">Background</span>
+        <svg class="bg-dropdown-arrow" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M4 6l4 4 4-4"/>
         </svg>
       </button>
-      <button class="bg-btn" data-bg="1" title="Matrix">
-        <svg viewBox="0 0 16 16" fill="currentColor">
-          <text x="1" y="4" font-size="4">ア</text>
-          <text x="1" y="8" font-size="4">イ</text>
-          <text x="1" y="12" font-size="4">ウ</text>
-          <text x="8" y="4" font-size="4">エ</text>
-          <text x="8" y="8" font-size="4">オ</text>
-          <text x="8" y="12" font-size="4">カ</text>
-        </svg>
-      </button>
-      <button class="bg-btn" data-bg="2" title="Starfield">
-        <svg viewBox="0 0 16 16" fill="currentColor">
-          <circle cx="4" cy="3" r="1" opacity="0.9"/>
-          <circle cx="12" cy="5" r="1.5" opacity="0.7"/>
-          <circle cx="8" cy="8" r="2" opacity="1"/>
-          <circle cx="3" cy="11" r="1" opacity="0.6"/>
-          <circle cx="13" cy="13" r="1" opacity="0.8"/>
-          <circle cx="6" cy="14" r="0.5" opacity="0.5"/>
-        </svg>
-      </button>
-      <button class="bg-btn" data-bg="3" title="Waves">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M0 8 Q4 4, 8 8 T16 8" opacity="0.8"/>
-          <path d="M0 10 Q4 6, 8 10 T16 10" opacity="0.5"/>
-          <path d="M0 12 Q4 8, 8 12 T16 12" opacity="0.3"/>
-        </svg>
-      </button>
-      <button class="bg-btn" data-bg="4" title="Minecraft">
-        <svg viewBox="0 0 16 16">
-          <rect x="2" y="2" width="12" height="12" fill="#4ade80" opacity="0.9"/>
-          <rect x="2" y="2" width="12" height="3" fill="#6db35f"/>
-        </svg>
-      </button>
-      <button class="bg-btn" data-bg="5" title="Code">
-        <svg viewBox="0 0 16 16" fill="currentColor">
-          <text x="1" y="5" font-size="3" font-family="monospace" fill="#a855f7">&lt;/&gt;</text>
-          <text x="1" y="10" font-size="3" font-family="monospace" fill="#06b6d4">{ }</text>
-          <text x="1" y="15" font-size="3" font-family="monospace" fill="#fff">( )</text>
-        </svg>
-      </button>
-      <button class="bg-btn" data-bg="6" title="Blobs">
-        <svg viewBox="0 0 16 16">
-          <ellipse cx="6" cy="6" rx="5" ry="4" fill="#a855f7" opacity="0.5"/>
-          <ellipse cx="10" cy="10" rx="4" ry="5" fill="#ec4899" opacity="0.4"/>
-          <ellipse cx="8" cy="8" rx="3" ry="3" fill="#3b82f6" opacity="0.3"/>
-        </svg>
-      </button>
-      <button class="bg-btn" data-bg="7" title="Noise">
-        <svg viewBox="0 0 16 16">
-          <rect x="1" y="1" width="2" height="2" fill="#333" opacity="0.8"/>
-          <rect x="4" y="1" width="3" height="2" fill="#555" opacity="0.6"/>
-          <rect x="8" y="1" width="2" height="2" fill="#222" opacity="0.9"/>
-          <rect x="11" y="1" width="4" height="2" fill="#444" opacity="0.7"/>
-          <rect x="1" y="4" width="4" height="2" fill="#666" opacity="0.5"/>
-          <rect x="6" y="4" width="2" height="2" fill="#333" opacity="0.8"/>
-          <rect x="9" y="4" width="3" height="2" fill="#555" opacity="0.6"/>
-          <rect x="1" y="7" width="2" height="2" fill="#444" opacity="0.7"/>
-          <rect x="4" y="7" width="3" height="2" fill="#333" opacity="0.9"/>
-          <rect x="8" y="7" width="2" height="2" fill="#666" opacity="0.5"/>
-          <rect x="11" y="7" width="4" height="2" fill="#444" opacity="0.8"/>
-        </svg>
-      </button>
-      <button class="bg-btn" data-bg="8" title="Aurora">
-        <svg viewBox="0 0 16 16">
-          <path d="M0 6 Q4 2, 8 6 T16 6" stroke="#10b981" stroke-width="2" fill="none" opacity="0.6"/>
-          <path d="M0 8 Q4 4, 8 8 T16 8" stroke="#a855f7" stroke-width="2" fill="none" opacity="0.4"/>
-          <path d="M0 10 Q4 6, 8 10 T16 10" stroke="#3b82f6" stroke-width="2" fill="none" opacity="0.3"/>
-        </svg>
-      </button>
-      <button class="bg-btn" data-bg="9" title="Falling Blocks">
-        <svg viewBox="0 0 16 16">
-          <rect x="2" y="2" width="5" height="5" fill="#4ade80" opacity="0.8" transform="rotate(15 4.5 4.5)"/>
-          <rect x="9" y="5" width="5" height="5" fill="#3b82f6" opacity="0.8" transform="rotate(-10 11.5 7.5)"/>
-          <rect x="4" y="9" width="5" height="5" fill="#fbbf24" opacity="0.8" transform="rotate(20 6.5 11.5)"/>
-        </svg>
-      </button>
+      <div class="bg-dropdown-menu" id="bgDropdownMenu">
+        <button class="bg-dropdown-item active" data-bg="0">Fireflies</button>
+        <button class="bg-dropdown-item" data-bg="1">Matrix</button>
+        <button class="bg-dropdown-item" data-bg="2">Starfield</button>
+        <button class="bg-dropdown-item" data-bg="3">Waves</button>
+        <button class="bg-dropdown-item" data-bg="4">Minecraft</button>
+        <button class="bg-dropdown-item" data-bg="5">Code</button>
+        <button class="bg-dropdown-item" data-bg="6">Blobs</button>
+        <button class="bg-dropdown-item" data-bg="7">Noise</button>
+        <button class="bg-dropdown-item" data-bg="8">Aurora</button>
+        <button class="bg-dropdown-item" data-bg="9">Falling Blocks</button>
+      </div>
     </div>
 
     <main>
@@ -654,8 +587,25 @@ const skills = [
       const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
       
       function initBackgroundSelector() {
-        const selector = document.getElementById('bgSelector');
-        const buttons = selector?.querySelectorAll('.bg-btn');
+        const dropdown = document.getElementById('bgDropdown');
+        const trigger = document.getElementById('bgDropdownTrigger');
+        const menu = document.getElementById('bgDropdownMenu');
+        const items = menu?.querySelectorAll('.bg-dropdown-item');
+        
+        if (!dropdown || !trigger || !menu || !items) return;
+        
+        const bgNames = ['Fireflies', 'Matrix', 'Starfield', 'Waves', 'Minecraft', 'Code', 'Blobs', 'Noise', 'Aurora', 'Falling Blocks'];
+        
+        trigger.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dropdown.classList.toggle('open');
+        });
+        
+        document.addEventListener('click', (e) => {
+          if (!dropdown.contains(e.target as Node)) {
+            dropdown.classList.remove('open');
+          }
+        });
         
         function showBackground(index: number) {
           localStorage.setItem('selectedBackground', String(index));
@@ -664,24 +614,18 @@ const skills = [
             layer.classList.toggle('active', i === index);
           });
           
-          buttons?.forEach((btn, i) => {
-            btn.classList.toggle('active', i === index);
+          items.forEach((item, i) => {
+            item.classList.toggle('active', i === index);
           });
           
-          const canvases = document.querySelectorAll('canvas');
-          canvases.forEach(canvas => {
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              const data = (canvas as any).animationData;
-              if (data && data.running) {
-                data.running = i === index;
-              }
-            }
-          });
+          dropdown.classList.remove('open');
         }
         
-        buttons?.forEach((btn, i) => {
-          btn.addEventListener('click', () => showBackground(i));
+        items.forEach((item) => {
+          item.addEventListener('click', () => {
+            const index = parseInt(item.getAttribute('data-bg') || '0');
+            showBackground(index);
+          });
         });
         
         window.addEventListener('backgroundChange', ((e: CustomEvent) => {
@@ -792,6 +736,7 @@ const skills = [
       }
       
       document.addEventListener('DOMContentLoaded', () => {
+        initBackgroundSelector();
         initWakaTabs();
         initPieChart();
         initMcBackground();
@@ -887,7 +832,7 @@ const skills = [
         track.appendChild(lane1);
         track.appendChild(lane2);
         
-        track.style.width = `${laneWidth * 2}px`;
+        track.style.setProperty('--track-width', `${laneWidth * 2}px`);
         track.style.setProperty('--lane-width', `${laneWidth}px`);
         
         track.classList.add('mc-scroll-animated');
