@@ -1,6 +1,80 @@
 ---
 import '../styles/global.css';
 
+interface WakaTimeStatsData {
+  range: string;
+  human_readable_range: string;
+  total_seconds: number;
+  total_seconds_including_other_language: number;
+  human_readable_total: string;
+  human_readable_total_including_other_language: string;
+  daily_average: number;
+  daily_average_including_other_language: number;
+  human_readable_daily_average: string;
+  human_readable_daily_average_including_other_language: string;
+  holidays: number;
+  days_including_holidays: number;
+  days_minus_holidays: number;
+  is_up_to_date: boolean;
+  is_including_today: boolean;
+  is_coding_activity_visible: boolean;
+  is_other_usage_visible: boolean;
+  start: string;
+  end: string;
+  timezone: string;
+  best_day: {
+    date: string;
+    text: string;
+    total_seconds: number;
+  } | null;
+  ai_additions: number;
+  ai_deletions: number;
+  human_additions: number;
+  human_deletions: number;
+  languages: WakaTimeStatItem[];
+  editors: WakaTimeStatItem[];
+  operating_systems: WakaTimeStatItem[];
+  categories: WakaTimeStatItem[];
+  projects: WakaTimeStatItem[];
+  dependencies: WakaTimeStatItem[];
+  machines: WakaTimeMachineItem[];
+}
+
+interface WakaTimeStatItem {
+  name: string;
+  total_seconds: number;
+  percent: number;
+  digital: string;
+  text: string;
+  hours: number;
+  minutes: number;
+  seconds: number;
+}
+
+interface WakaTimeMachineItem extends WakaTimeStatItem {
+  machine_name_id: string;
+}
+
+interface WakaTimeAllTimeData {
+  daily_average: number;
+  decimal: string;
+  digital: string;
+  is_up_to_date: boolean;
+  percent_calculated: number;
+  range: {
+    end: string;
+    end_date: string;
+    end_text: string;
+    start: string;
+    start_date: string;
+    start_text: string;
+    timezone: string;
+  };
+  text: string;
+  timeout: number;
+  total_seconds: number;
+}
+
 const colorMap: Record<string, string> = {
   Java: '#ea580c',
   Python: '#eab308',
@@ -62,8 +136,8 @@ const MAX_WEEKS = 20;
 const displayWeeks = weeksData.slice(-MAX_WEEKS);
 
 const wakaKey = import.meta.env.WAKATIME_API_KEY;
-let wakaStats = null;
-let wakaAllTimeStats = null;
+let wakaStats: { data: WakaTimeStatsData } | null = null;
+let wakaAllTimeStats: { data: WakaTimeAllTimeData } | null = null;
 
 if (wakaKey) {
   const wakaRes = await fetch('https://wakatime.com/api/v1/users/current/stats/last_7_days', {
@@ -71,7 +145,7 @@ if (wakaKey) {
   });
   wakaStats = await wakaRes.json();
   
-  const wakaAllRes = await fetch('https://wakatime.com/api/v1/users/current/stats/all_time', {
+  const wakaAllRes = await fetch('https://wakatime.com/api/v1/users/current/all_time_since_today', {
     headers: { 'Authorization': `Basic ${btoa(wakaKey)}` }
   });
   wakaAllTimeStats = await wakaAllRes.json();
@@ -202,153 +276,184 @@ const skills = [
         <section id="wakatime" class="section">
           <div class="container">
             <h2>WakaTime</h2>
-            <p class="section-subtitle">Coding statistics</p>
+            <p class="section-subtitle">Coding statistics • {wakaStats.data.human_readable_range}</p>
             
             <div class="waka-full-grid">
-              <div class="waka-card">
-                <h3>7 Days Summary</h3>
+              <div class="waka-card waka-summary">
+                <div class="waka-summary-stats">
+                  <div class="waka-stat-inline">
+                    <span class="waka-stat-value">{wakaStats.data.human_readable_total}</span>
+                    <span class="waka-stat-label">Total Time</span>
+                  </div>
+                  <div class="waka-stat-inline">
+                    <span class="waka-stat-value">{wakaStats.data.human_readable_daily_average}</span>
+                    <span class="waka-stat-label">Daily Avg</span>
+                  </div>
+                  <div class="waka-stat-inline">
+                    <span class="waka-stat-value">{wakaStats.data.best_day?.text || '-'}</span>
+                    <span class="waka-stat-label">Best Day</span>
+                  </div>
+                  <div class="waka-stat-inline">
+                    <span class="waka-stat-value">{wakaStats.data.days_minus_holidays || 0}</span>
+                    <span class="waka-stat-label">Active Days</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="waka-card waka-all-time">
+                <h3>All Time Since Today</h3>
                 <div class="waka-stats-grid">
                   <div class="waka-stat-box">
-                    <span class="waka-stat-value">{wakaStats.data.total_time_text}</span>
+                    <span class="waka-stat-value">{wakaAllTimeStats?.data?.text || '-'}</span>
                     <span class="waka-stat-label">Total Time</span>
                   </div>
                   <div class="waka-stat-box">
-                    <span class="waka-stat-value">{wakaStats.data.total_daily_average_time_text}</span>
-                    <span class="waka-stat-label">Daily Average</span>
+                    <span class="waka-stat-value">{wakaAllTimeStats?.data?.digital || '-'}</span>
+                    <span class="waka-stat-label">Digital</span>
                   </div>
                   <div class="waka-stat-box">
-                    <span class="waka-stat-value">{wakaStats.data.best_day?.date || '-'}</span>
-                    <span class="waka-stat-label">Best Day</span>
+                    <span class="waka-stat-value">{Math.round((wakaAllTimeStats?.data?.daily_average || 0) / 3600 * 10) / 10}h</span>
+                    <span class="waka-stat-label">Daily Avg</span>
                   </div>
                   <div class="waka-stat-box">
-                    <span class="waka-stat-value">{wakaStats.data.best_day?.text || '-'}</span>
-                    <span class="waka-stat-label">Best Day Time</span>
+                    <span class="waka-stat-value">{wakaAllTimeStats?.data?.range?.start_date || '-'}</span>
+                    <span class="waka-stat-label">Since</span>
                   </div>
                 </div>
               </div>
-
-              <div class="waka-card">
-                <h3>Languages</h3>
-                <div class="pie-container">
-                  <div 
-                    class="pie-chart"
-                    style={(() => {
-                      const topLangs = wakaStats.data.languages.slice(0, 8);
-                      const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
-                      let gradient = '';
-                      let currentDeg = 0;
-                      topLangs.forEach((lang: any, i: number) => {
-                        const deg = (lang.percent / 100) * 360;
-                        gradient += `${colors[i % colors.length]} ${currentDeg}deg ${currentDeg + deg}deg, `;
-                        currentDeg += deg;
-                      });
-                      return `background: conic-gradient(${gradient.slice(0, -2)});`;
-                    })()}
-                  >
-                    <div class="pie-center">
-                      <span class="pie-center-text">{wakaStats.data.languages[0]?.name || '-'}</span>
-                      <span class="pie-center-time">{wakaStats.data.languages[0]?.text || '-'}</span>
-                    </div>
-                  </div>
-                  <div class="pie-legend">
-                    {wakaStats.data.languages.slice(0, 8).map((lang: any, i: number) => {
-                      const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
-                      return (
-                        <div class="pie-legend-item">
-                          <span class="pie-legend-color" style={`background: ${colors[i % colors.length]}`}></span>
-                          <span class="pie-legend-name">{lang.name}</span>
-                          <span class="pie-legend-percent">{lang.percent.toFixed(1)}%</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              <div class="waka-card">
-                <h3>Editors</h3>
-                <div class="waka-languages-full">
-                  {wakaStats.data.editors?.map((editor: any) => (
-                    <div class="waka-lang-row">
-                      <div class="waka-lang-info">
-                        <span class="waka-lang-name">{editor.name}</span>
-                        <span class="waka-lang-time">{editor.text}</span>
-                      </div>
-                      <div class="waka-lang-bar-wrap">
-                        <div class="waka-lang-bar">
-                          <div class="waka-lang-fill" style={`width: ${editor.percent}%`}></div>
-                        </div>
-                        <span class="waka-lang-percent">{editor.percent.toFixed(1)}%</span>
-                      </div>
-                    </div>
-                  )) || <p class="text-gray-500">No editor data</p>}
-                </div>
-              </div>
-
-              <div class="waka-card">
-                <h3>Operating Systems</h3>
-                <div class="waka-languages-full">
-                  {wakaStats.data.operating_systems?.map((os: any) => (
-                    <div class="waka-lang-row">
-                      <div class="waka-lang-info">
-                        <span class="waka-lang-name">{os.name}</span>
-                        <span class="waka-lang-time">{os.text}</span>
-                      </div>
-                      <div class="waka-lang-bar-wrap">
-                        <div class="waka-lang-bar">
-                          <div class="waka-lang-fill" style={`width: ${os.percent}%`}></div>
-                        </div>
-                        <span class="waka-lang-percent">{os.percent.toFixed(1)}%</span>
-                      </div>
-                    </div>
-                  )) || <p class="text-gray-500">No OS data</p>}
-                </div>
-              </div>
-
-              <div class="waka-card">
-                <h3>Categories</h3>
-                <div class="waka-languages-full">
-                  {wakaStats.data.categories?.map((cat: any) => (
-                    <div class="waka-lang-row">
-                      <div class="waka-lang-info">
-                        <span class="waka-lang-name">{cat.name}</span>
-                        <span class="waka-lang-time">{cat.text}</span>
-                      </div>
-                      <div class="waka-lang-bar-wrap">
-                        <div class="waka-lang-bar">
-                          <div class="waka-lang-fill" style={`width: ${cat.percent}%`}></div>
-                        </div>
-                        <span class="waka-lang-percent">{cat.percent.toFixed(1)}%</span>
-                      </div>
-                    </div>
-                  )) || <p class="text-gray-500">No category data</p>}
-                </div>
-              </div>
-
-              {wakaAllTimeStats && wakaAllTimeStats.data && (
-                <div class="waka-card waka-all-time">
-                  <h3>All Time</h3>
-                  <div class="waka-stats-grid">
-                    <div class="waka-stat-box">
-                      <span class="waka-stat-value">{wakaAllTimeStats.data.total_time_text}</span>
-                      <span class="waka-stat-label">Total Time</span>
-                    </div>
-                    <div class="waka-stat-box">
-                      <span class="waka-stat-value">{wakaAllTimeStats.data.total_coding_time_text || '-'}</span>
-                      <span class="waka-stat-label">Coding Time</span>
-                    </div>
-                    <div class="waka-stat-box">
-                      <span class="waka-stat-value">{wakaAllTimeStats.data.achievements_total || 0}</span>
-                      <span class="waka-stat-label">Achievements</span>
-                    </div>
-                    <div class="waka-stat-box">
-                      <span class="waka-stat-value">{wakaAllTimeStats.data.daily_average_time_text || '-'}</span>
-                      <span class="waka-stat-label">Daily Average</span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
+
+              <div class="waka-tabs">
+                <div class="waka-tab-buttons">
+                  <button class="waka-tab-btn active" data-tab="languages">Languages</button>
+                  <button class="waka-tab-btn" data-tab="editors">Editors</button>
+                  <button class="waka-tab-btn" data-tab="os">OS</button>
+                  <button class="waka-tab-btn" data-tab="categories">Categories</button>
+                </div>
+
+                <div class="waka-tab-content active" id="tab-languages">
+                  <div class="waka-card waka-pie-card">
+                    <script id="langData" type="application/json" set:html={JSON.stringify(wakaStats.data.languages.slice(0, 8))}></script>
+                    <div class="pie-wrapper">
+                      <div class="pie-container" id="pieContainer">
+                        <div 
+                          class="pie-chart"
+                          id="pieChart"
+                          style={(() => {
+                            const topLangs = wakaStats.data.languages.slice(0, 8);
+                            const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
+                            let gradient = '';
+                            let currentDeg = 0;
+                            topLangs.forEach((lang, i) => {
+                              const deg = (lang.percent / 100) * 360;
+                              gradient += `${colors[i % colors.length]} ${currentDeg}deg ${currentDeg + deg}deg, `;
+                              currentDeg += deg;
+                            });
+                            return `background: conic-gradient(${gradient.slice(0, -2)});`;
+                          })()}
+                        >
+                          <div class="pie-center">
+                            <span class="pie-center-text" id="pieCenterText">{wakaStats.data.languages[0]?.name || '-'}</span>
+                            <span class="pie-center-time" id="pieCenterTime">{wakaStats.data.languages[0]?.text || '-'}</span>
+                            <span class="pie-center-percent" id="pieCenterPercent">{wakaStats.data.languages[0]?.percent.toFixed(1) || '0'}%</span>
+                          </div>
+                        </div>
+                        <div class="pie-tooltip" id="pieTooltip"></div>
+                      </div>
+                      <div class="pie-legend">
+                        {wakaStats.data.languages.slice(0, 8).map((lang, i) => {
+                          const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
+                          return (
+                            <div class="pie-legend-item" data-index={i}>
+                              <span class="pie-legend-color" style={`background: ${colors[i % colors.length]}`}></span>
+                              <span class="pie-legend-name">{lang.name}</span>
+                              <span class="pie-legend-percent">{lang.percent.toFixed(1)}%</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="waka-tab-content" id="tab-editors">
+                  <div class="waka-card">
+                    <div class="waka-blocks-grid">
+                      {wakaStats.data.editors && wakaStats.data.editors.length > 0 ? (
+                        wakaStats.data.editors.map((editor, i) => {
+                          const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
+                          return (
+                            <div class="waka-block" style={`--block-color: ${colors[i % colors.length]}`}>
+                              <div class="waka-block-header">
+                                <span class="waka-block-name">{editor.name}</span>
+                                <span class="waka-block-percent">{editor.percent.toFixed(1)}%</span>
+                              </div>
+                              <div class="waka-block-bar">
+                                <div class="waka-block-fill" style={`width: ${editor.percent}%`}></div>
+                              </div>
+                              <span class="waka-block-time">{editor.text}</span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <p class="text-gray-500">No editor data</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="waka-tab-content" id="tab-os">
+                  <div class="waka-card">
+                    <div class="waka-blocks-grid">
+                      {wakaStats.data.operating_systems && wakaStats.data.operating_systems.length > 0 ? (
+                        wakaStats.data.operating_systems.map((os, i) => {
+                          const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
+                          return (
+                            <div class="waka-block" style={`--block-color: ${colors[i % colors.length]}`}>
+                              <div class="waka-block-header">
+                                <span class="waka-block-name">{os.name}</span>
+                                <span class="waka-block-percent">{os.percent.toFixed(1)}%</span>
+                              </div>
+                              <div class="waka-block-bar">
+                                <div class="waka-block-fill" style={`width: ${os.percent}%`}></div>
+                              </div>
+                              <span class="waka-block-time">{os.text}</span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <p class="text-gray-500">No OS data</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="waka-tab-content" id="tab-categories">
+                  <div class="waka-card">
+                    <div class="waka-blocks-grid">
+                      {wakaStats.data.categories && wakaStats.data.categories.length > 0 ? (
+                        wakaStats.data.categories.map((cat, i) => {
+                          const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
+                          return (
+                            <div class="waka-block" style={`--block-color: ${colors[i % colors.length]}`}>
+                              <div class="waka-block-header">
+                                <span class="waka-block-name">{cat.name}</span>
+                                <span class="waka-block-percent">{cat.percent.toFixed(1)}%</span>
+                              </div>
+                              <div class="waka-block-bar">
+                                <div class="waka-block-fill" style={`width: ${cat.percent}%`}></div>
+                              </div>
+                              <span class="waka-block-time">{cat.text}</span>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <p class="text-gray-500">No category data</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
           </div>
         </section>
       )}
@@ -372,5 +477,109 @@ const skills = [
     <footer>
       <p>© {new Date().getFullYear()} Crazygiscool</p>
     </footer>
+    
+    <script>
+      const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
+      
+      function initWakaTabs() {
+        document.querySelectorAll('.waka-tab-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const tabId = btn.getAttribute('data-tab');
+            
+            document.querySelectorAll('.waka-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.waka-tab-content').forEach(c => c.classList.remove('active'));
+            
+            btn.classList.add('active');
+            document.getElementById(`tab-${tabId}`)?.classList.add('active');
+          });
+        });
+      }
+      
+      function initPieChart() {
+        const pieCenterText = document.getElementById('pieCenterText');
+        const pieCenterTime = document.getElementById('pieCenterTime');
+        const pieCenterPercent = document.getElementById('pieCenterPercent');
+        const pieTooltip = document.getElementById('pieTooltip');
+        const pieChart = document.getElementById('pieChart');
+        const pieContainer = document.getElementById('pieContainer');
+        
+        if (!pieChart || !pieCenterText) return;
+        
+        const langDataEl = document.getElementById('langData');
+        const languages = langDataEl ? JSON.parse(langDataEl.textContent || '[]') : [];
+        
+        function updatePieCenter(index) {
+          if (index >= 0 && index < languages.length) {
+            const lang = languages[index];
+            pieCenterText.textContent = lang.name;
+            pieCenterTime.textContent = lang.text;
+            pieCenterPercent.textContent = lang.percent.toFixed(1) + '%';
+          }
+        }
+        
+        pieChart.addEventListener('mousemove', (e) => {
+          const rect = pieChart.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const x = e.clientX - centerX;
+          const y = e.clientY - centerY;
+          
+          let angle = Math.atan2(y, x) * (180 / Math.PI) + 90;
+          if (angle < 0) angle += 360;
+          
+          let cumulativePercent = 0;
+          let hoveredIndex = -1;
+          
+          for (let i = 0; i < languages.length && i < 8; i++) {
+            const startAngle = cumulativePercent * 3.6;
+            cumulativePercent += languages[i].percent;
+            const endAngle = cumulativePercent * 3.6;
+            
+            if (angle >= startAngle && angle < endAngle) {
+              hoveredIndex = i;
+              break;
+            }
+          }
+          
+          if (hoveredIndex >= 0) {
+            pieTooltip.style.opacity = '1';
+            pieTooltip.style.left = `${e.clientX - pieContainer.getBoundingClientRect().left + 10}px`;
+            pieTooltip.style.top = `${e.clientY - pieContainer.getBoundingClientRect().top - 10}px`;
+            pieTooltip.innerHTML = `
+              <div class="tooltip-color" style="background: ${colors[hoveredIndex]}"></div>
+              <div class="tooltip-content">
+                <div class="tooltip-name">${languages[hoveredIndex].name}</div>
+                <div class="tooltip-stats">
+                  <span>${languages[hoveredIndex].text}</span>
+                  <span class="tooltip-percent">${languages[hoveredIndex].percent.toFixed(1)}%</span>
+                </div>
+              </div>
+            `;
+            updatePieCenter(hoveredIndex);
+            pieChart.style.transform = 'scale(1.02)';
+          }
+        });
+        
+        pieChart.addEventListener('mouseleave', () => {
+          pieTooltip.style.opacity = '0';
+          pieChart.style.transform = 'scale(1)';
+          updatePieCenter(0);
+        });
+        
+        document.querySelectorAll('.pie-legend-item').forEach((item, i) => {
+          item.addEventListener('mouseenter', () => {
+            updatePieCenter(i);
+          });
+          item.addEventListener('mouseleave', () => {
+            updatePieCenter(0);
+          });
+        });
+      }
+      
+      document.addEventListener('DOMContentLoaded', () => {
+        initWakaTabs();
+        initPieChart();
+      });
+    </script>
   </body>
 </html>
