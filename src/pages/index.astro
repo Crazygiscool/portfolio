@@ -740,7 +740,424 @@ const skills = [
         initWakaTabs();
         initPieChart();
         initMcBackground();
+        initBackgrounds();
       });
+
+      function initBackgrounds() {
+        initFireflies();
+        initMatrixRain();
+        initStarfield();
+        initCodeRain();
+        initBlobs();
+        initNoise();
+        initAurora();
+        initFallingBlocks();
+      }
+
+      function initFireflies() {
+        const canvas = document.getElementById('fireflies-canvas') as HTMLCanvasElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const fireflies: any[] = [];
+        const numFireflies = 80;
+        
+        for (let i = 0; i < numFireflies; i++) {
+          fireflies.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            radius: Math.random() * 2 + 1,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5,
+            alpha: Math.random(),
+            alphaDir: Math.random() > 0.5 ? 0.02 : -0.02
+          });
+        }
+        
+        function animate() {
+          ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          fireflies.forEach(f => {
+            f.x += f.vx;
+            f.y += f.vy;
+            f.alpha += f.alphaDir;
+            
+            if (f.alpha <= 0 || f.alpha >= 1) f.alphaDir *= -1;
+            if (f.x < 0) f.x = canvas.width;
+            if (f.x > canvas.width) f.x = 0;
+            if (f.y < 0) f.y = canvas.height;
+            if (f.y > canvas.height) f.y = 0;
+            
+            ctx.beginPath();
+            ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(168, 85, 247, ${f.alpha})`;
+            ctx.fill();
+          });
+          
+          requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        window.addEventListener('resize', () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        });
+      }
+
+      function initMatrixRain() {
+        const canvas = document.getElementById('matrix-canvas') as HTMLCanvasElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789';
+        const fontSize = 14;
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops: number[] = Array(columns).fill(1);
+        
+        function draw() {
+          ctx.fillStyle = 'rgba(10, 10, 15, 0.05)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          ctx.fillStyle = '#10b981';
+          ctx.font = `${fontSize}px monospace`;
+          
+          for (let i = 0; i < drops.length; i++) {
+            const char = chars[Math.floor(Math.random() * chars.length)];
+            ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+            
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+              drops[i] = 0;
+            }
+            drops[i]++;
+          }
+        }
+        
+        setInterval(draw, 50);
+        
+        window.addEventListener('resize', () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        });
+      }
+
+      function initStarfield() {
+        const canvas = document.getElementById('starfield-canvas') as HTMLCanvasElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const stars: any[] = [];
+        const numStars = 200;
+        
+        for (let i = 0; i < numStars; i++) {
+          stars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            radius: Math.random() * 1.5,
+            speed: Math.random() * 0.5 + 0.1,
+            opacity: Math.random()
+          });
+        }
+        
+        function animate() {
+          ctx.fillStyle = 'rgba(10, 10, 15, 0.2)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          stars.forEach(star => {
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+            ctx.fill();
+            
+            star.x -= star.speed;
+            if (star.x < 0) {
+              star.x = canvas.width;
+              star.y = Math.random() * canvas.height;
+            }
+          });
+          
+          requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        window.addEventListener('resize', () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        });
+      }
+
+      function initCodeRain() {
+        const canvas = document.getElementById('coderain-canvas') as HTMLCanvasElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const codeSnippets = ['{ }', '< >', '( )', '[ ]', '&&', '||', '=>', '++', '--', '==', '!=', '==='];
+        const fontSize = 16;
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops: any[] = Array(columns).fill(0).map(() => ({
+          y: Math.random() * -100,
+          speed: Math.random() * 2 + 1,
+          text: codeSnippets[Math.floor(Math.random() * codeSnippets.length)],
+          opacity: Math.random() * 0.5 + 0.5
+        }));
+        
+        function draw() {
+          ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          ctx.font = `${fontSize}px monospace`;
+          
+          drops.forEach(drop => {
+            const hue = Math.random() > 0.5 ? 270 : 190;
+            ctx.fillStyle = `hsla(${hue}, 80%, 60%, ${drop.opacity})`;
+            ctx.fillText(drop.text, drops.indexOf(drop) * fontSize, drop.y);
+            
+            drop.y += drop.speed;
+            if (drop.y > canvas.height) {
+              drop.y = -20;
+              drop.text = codeSnippets[Math.floor(Math.random() * codeSnippets.length)];
+            }
+          });
+        }
+        
+        setInterval(draw, 50);
+        
+        window.addEventListener('resize', () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        });
+      }
+
+      function initBlobs() {
+        const canvas = document.getElementById('blobs-canvas') as HTMLCanvasElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const blobs: any[] = [];
+        const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981'];
+        
+        for (let i = 0; i < 5; i++) {
+          blobs.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            radius: Math.random() * 150 + 100,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5,
+            color: colors[i % colors.length],
+            phase: Math.random() * Math.PI * 2
+          });
+        }
+        
+        function animate() {
+          ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          blobs.forEach(blob => {
+            blob.x += blob.vx;
+            blob.y += blob.vy;
+            blob.phase += 0.01;
+            
+            if (blob.x < -blob.radius) blob.x = canvas.width + blob.radius;
+            if (blob.x > canvas.width + blob.radius) blob.x = -blob.radius;
+            if (blob.y < -blob.radius) blob.y = canvas.height + blob.radius;
+            if (blob.y > canvas.height + blob.radius) blob.y = -blob.radius;
+            
+            const gradient = ctx.createRadialGradient(
+              blob.x, blob.y, 0,
+              blob.x, blob.y, blob.radius + Math.sin(blob.phase) * 20
+            );
+            gradient.addColorStop(0, blob.color + '40');
+            gradient.addColorStop(1, blob.color + '00');
+            
+            ctx.beginPath();
+            ctx.arc(blob.x, blob.y, blob.radius + Math.sin(blob.phase) * 20, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+          });
+          
+          requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        window.addEventListener('resize', () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        });
+      }
+
+      function initNoise() {
+        const canvas = document.getElementById('noise-canvas') as HTMLCanvasElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const imageData = ctx.createImageData(canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        function generateNoise() {
+          for (let i = 0; i < data.length; i += 4) {
+            const value = Math.random() * 255;
+            data[i] = value;
+            data[i + 1] = value;
+            data[i + 2] = value;
+            data[i + 3] = 20;
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
+        
+        setInterval(generateNoise, 100);
+        
+        window.addEventListener('resize', () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        });
+      }
+
+      function initAurora() {
+        const canvas = document.getElementById('aurora-canvas') as HTMLCanvasElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const waves: any[] = [];
+        const colors = [
+          { color: '#10b981', speed: 0.02 },
+          { color: '#a855f7', speed: 0.015 },
+          { color: '#3b82f6', speed: 0.025 }
+        ];
+        
+        colors.forEach((c, i) => {
+          waves.push({
+            color: c.color,
+            speed: c.speed,
+            phase: i * 2,
+            amplitude: 50 + i * 20,
+            y: canvas.height * (0.3 + i * 0.15)
+          });
+        });
+        
+        let frame = 0;
+        
+        function animate() {
+          ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          waves.forEach(wave => {
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            
+            for (let x = 0; x < canvas.width; x++) {
+              const y = wave.y + Math.sin((x * 0.01) + wave.phase + frame * wave.speed) * wave.amplitude;
+              ctx.lineTo(x, y);
+            }
+            
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.closePath();
+            
+            const gradient = ctx.createLinearGradient(0, wave.y - wave.amplitude, 0, canvas.height);
+            gradient.addColorStop(0, wave.color + '40');
+            gradient.addColorStop(1, wave.color + '00');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+          });
+          
+          frame++;
+          requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        window.addEventListener('resize', () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        });
+      }
+
+      function initFallingBlocks() {
+        const canvas = document.getElementById('falling-blocks-canvas') as HTMLCanvasElement;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        const blocks: any[] = [];
+        const colors = ['#4ade80', '#3b82f6', '#fbbf24', '#f87171', '#a855f7'];
+        
+        for (let i = 0; i < 30; i++) {
+          blocks.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 30 + 20,
+            speed: Math.random() * 2 + 1,
+            rotation: Math.random() * Math.PI * 2,
+            rotationSpeed: (Math.random() - 0.5) * 0.05,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            opacity: Math.random() * 0.3 + 0.2
+          });
+        }
+        
+        function animate() {
+          ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          blocks.forEach(block => {
+            block.y += block.speed;
+            block.rotation += block.rotationSpeed;
+            
+            if (block.y > canvas.height + block.size) {
+              block.y = -block.size;
+              block.x = Math.random() * canvas.width;
+            }
+            
+            ctx.save();
+            ctx.translate(block.x, block.y);
+            ctx.rotate(block.rotation);
+            ctx.fillStyle = block.color + Math.floor(block.opacity * 255).toString(16).padStart(2, '0');
+            ctx.fillRect(-block.size / 2, -block.size / 2, block.size, block.size);
+            ctx.restore();
+          });
+          
+          requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        window.addEventListener('resize', () => {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+        });
+      }
       
       function initMcBackground() {
         const track = document.getElementById('mcScrollTrack');
