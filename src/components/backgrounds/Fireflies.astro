@@ -1,0 +1,110 @@
+---
+---
+
+<div class="background-container" id="fireflies-container">
+  <canvas id="fireflies-canvas"></canvas>
+</div>
+
+<script>
+  class Fireflies {
+    private canvas: HTMLCanvasElement;
+    private ctx: CanvasRenderingContext2D;
+    private particles: Array<{x: number; y: number; vx: number; vy: number; size: number; alpha: number; alphaDir: number; color: string}> = [];
+    private animationId: number = 0;
+
+    constructor(canvas: HTMLCanvasElement) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d')!;
+      this.resize();
+      this.init();
+      window.addEventListener('resize', () => this.resize());
+    }
+
+    private resize() {
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+    }
+
+    private init() {
+      const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#fbbf24'];
+      for (let i = 0; i < 80; i++) {
+        this.particles.push({
+          x: Math.random() * this.canvas.width,
+          y: Math.random() * this.canvas.height,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          size: Math.random() * 3 + 1,
+          alpha: Math.random(),
+          alphaDir: Math.random() * 0.02 + 0.005,
+          color: colors[Math.floor(Math.random() * colors.length)]
+        });
+      }
+      this.animate();
+    }
+
+    private animate = () => {
+      this.ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+      this.particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < 0) p.x = this.canvas.width;
+        if (p.x > this.canvas.width) p.x = 0;
+        if (p.y < 0) p.y = this.canvas.height;
+        if (p.y > this.canvas.height) p.y = 0;
+
+        p.alpha += p.alphaDir;
+        if (p.alpha >= 1 || p.alpha <= 0) p.alphaDir *= -1;
+
+        this.ctx.beginPath();
+        const gradient = this.ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 4);
+        gradient.addColorStop(0, p.color);
+        gradient.addColorStop(0.5, p.color + '80');
+        gradient.addColorStop(1, 'transparent');
+        
+        this.ctx.fillStyle = gradient;
+        this.ctx.globalAlpha = p.alpha * 0.8;
+        this.ctx.arc(p.x, p.y, p.size * 4, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.beginPath();
+        this.ctx.fillStyle = '#fff';
+        this.ctx.globalAlpha = p.alpha;
+        this.ctx.arc(p.x, p.y, p.size * 0.5, 0, Math.PI * 2);
+        this.ctx.fill();
+      });
+
+      this.ctx.globalAlpha = 1;
+      this.animationId = requestAnimationFrame(this.animate);
+    }
+
+    public destroy() {
+      cancelAnimationFrame(this.animationId);
+    }
+  }
+
+  const container = document.getElementById('fireflies-container');
+  if (container) {
+    const canvas = document.getElementById('fireflies-canvas') as HTMLCanvasElement;
+    if (canvas) {
+      const fireflies = new Fireflies(canvas);
+      (window as any).__fireflies = fireflies;
+    }
+  }
+</script>
+
+<style>
+  .background-container {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: #0a0a0f;
+  }
+
+  #fireflies-canvas {
+    width: 100%;
+    height: 100%;
+  }
+</style>

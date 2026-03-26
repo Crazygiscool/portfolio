@@ -1,0 +1,107 @@
+---
+---
+
+<div class="background-container" id="noise-container">
+  <canvas id="noise-canvas"></canvas>
+</div>
+
+<script>
+  class PixelNoise {
+    private canvas: HTMLCanvasElement;
+    private ctx: CanvasRenderingContext2D;
+    private imageData: ImageData | null = null;
+    private animationId: number = 0;
+    private pixelSize = 4;
+
+    constructor(canvas: HTMLCanvasElement) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d')!;
+      this.resize();
+      this.init();
+      window.addEventListener('resize', () => this.resize());
+    }
+
+    private resize() {
+      this.canvas.width = Math.ceil(window.innerWidth / this.pixelSize);
+      this.canvas.height = Math.ceil(window.innerHeight / this.pixelSize);
+      this.imageData = this.ctx.createImageData(this.canvas.width, this.canvas.height);
+      this.generate();
+    }
+
+    private init() {
+      this.generate();
+      this.animate();
+    }
+
+    private generate() {
+      if (!this.imageData) return;
+      const data = this.imageData.data;
+      
+      for (let i = 0; i < data.length; i += 4) {
+        const isColored = Math.random() > 0.85;
+        
+        if (isColored) {
+          const colors = [
+            [168, 85, 247],
+            [236, 72, 153],
+            [59, 130, 246],
+            [16, 185, 129],
+            [251, 191, 36]
+          ];
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          data[i] = color[0];
+          data[i + 1] = color[1];
+          data[i + 2] = color[2];
+          data[i + 3] = 60 + Math.random() * 40;
+        } else {
+          const gray = Math.random() * 30;
+          data[i] = gray;
+          data[i + 1] = gray;
+          data[i + 2] = gray + 5;
+          data[i + 3] = 20 + Math.random() * 20;
+        }
+      }
+    }
+
+    private animate = () => {
+      if (Math.random() > 0.7) {
+        this.generate();
+      }
+      
+      if (this.imageData) {
+        this.ctx.putImageData(this.imageData, 0, 0);
+      }
+      
+      this.animationId = requestAnimationFrame(this.animate);
+    }
+
+    public destroy() {
+      cancelAnimationFrame(this.animationId);
+    }
+  }
+
+  const container = document.getElementById('noise-container');
+  if (container) {
+    const canvas = document.getElementById('noise-canvas') as HTMLCanvasElement;
+    if (canvas) {
+      const noise = new PixelNoise(canvas);
+      (window as any).__noise = noise;
+    }
+  }
+</script>
+
+<style>
+  .background-container {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: #0a0a0f;
+  }
+
+  #noise-canvas {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+</style>

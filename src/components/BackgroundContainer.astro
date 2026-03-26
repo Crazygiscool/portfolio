@@ -1,0 +1,95 @@
+---
+import Fireflies from './backgrounds/Fireflies.astro';
+import MatrixRain from './backgrounds/MatrixRain.astro';
+import Starfield from './backgrounds/Starfield.astro';
+import GradientWaves from './backgrounds/GradientWaves.astro';
+import MinecraftTerrain from './backgrounds/MinecraftTerrain.astro';
+import CodeRain from './backgrounds/CodeRain.astro';
+import Blobs from './backgrounds/Blobs.astro';
+import PixelNoise from './backgrounds/PixelNoise.astro';
+import Aurora from './backgrounds/Aurora.astro';
+import FallingBlocks from './backgrounds/FallingBlocks.astro';
+---
+
+<div class="background-container" id="backgroundContainer">
+  <div class="bg-layer active" id="bg-0">
+    <Fireflies />
+  </div>
+  <div class="bg-layer" id="bg-1">
+    <MatrixRain />
+  </div>
+  <div class="bg-layer" id="bg-2">
+    <Starfield />
+  </div>
+  <div class="bg-layer" id="bg-3">
+    <GradientWaves />
+  </div>
+  <div class="bg-layer" id="bg-4">
+    <MinecraftTerrain />
+  </div>
+  <div class="bg-layer" id="bg-5">
+    <CodeRain />
+  </div>
+  <div class="bg-layer" id="bg-6">
+    <Blobs />
+  </div>
+  <div class="bg-layer" id="bg-7">
+    <PixelNoise />
+  </div>
+  <div class="bg-layer" id="bg-8">
+    <Aurora />
+  </div>
+  <div class="bg-layer" id="bg-9">
+    <FallingBlocks />
+  </div>
+</div>
+
+<script>
+  function initBackgrounds() {
+    const saved = localStorage.getItem('selectedBackground');
+    let currentBg = saved ? parseInt(saved) : 0;
+    
+    function showBackground(index: number) {
+      currentBg = index;
+      localStorage.setItem('selectedBackground', String(index));
+      
+      document.querySelectorAll('.bg-layer').forEach((layer, i) => {
+        layer.classList.toggle('active', i === index);
+      });
+    }
+    
+    document.querySelectorAll('.bg-btn').forEach((btn, i) => {
+      btn.addEventListener('click', () => showBackground(i));
+    });
+    
+    showBackground(currentBg);
+    
+    window.addEventListener('backgroundChange', ((e: CustomEvent) => {
+      showBackground(e.detail.index);
+    }) as EventListener);
+  }
+  
+  document.addEventListener('DOMContentLoaded', initBackgrounds);
+  initBackgrounds();
+</script>
+
+<style>
+  .background-container {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .bg-layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+
+  .bg-layer.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+</style>

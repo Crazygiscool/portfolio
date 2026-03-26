@@ -1,0 +1,118 @@
+---
+---
+
+<div class="background-container" id="coderain-container">
+  <canvas id="coderain-canvas"></canvas>
+</div>
+
+<script>
+  class CodeRain {
+    private canvas: HTMLCanvasElement;
+    private ctx: CanvasRenderingContext2D;
+    private columns: Array<{x: number; y: number; chars: string[]; speed: number}> = [];
+    private animationId: number = 0;
+    private codeChars = 'const let var function return async await import export class interface type enum module namespace public private protected static readonly implements extends constructor super this import from export default if else for while do switch case break continue try catch throw finally new delete typeof instanceof in of void null undefined true false const async function class return if else for while switch try catch throw new typeof instanceof in of void null undefined const let var function return async await import export class interface type extends implements constructor super this async function class return async function class return async function class return';
+
+    constructor(canvas: HTMLCanvasElement) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d')!;
+      this.resize();
+      this.init();
+      window.addEventListener('resize', () => this.resize());
+    }
+
+    private resize() {
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+    }
+
+    private init() {
+      const fontSize = 12;
+      const columnCount = Math.floor(this.canvas.width / fontSize);
+      
+      this.columns = [];
+      for (let i = 0; i < columnCount; i++) {
+        this.columns.push({
+          x: i * fontSize,
+          y: Math.random() * this.canvas.height - this.canvas.height,
+          chars: [],
+          speed: Math.random() * 2 + 1
+        });
+        const charCount = Math.floor(Math.random() * 15) + 8;
+        for (let j = 0; j < charCount; j++) {
+          const code = this.codeChars.split(' ')[Math.floor(Math.random() * 50)];
+          this.columns[i].chars.push(code);
+        }
+      }
+      this.animate();
+    }
+
+    private animate = () => {
+      this.ctx.fillStyle = 'rgba(10, 5, 20, 0.1)';
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+      this.ctx.font = '12px monospace';
+
+      this.columns.forEach(col => {
+        for (let i = 0; i < col.chars.length; i++) {
+          const charY = col.y + i * 14;
+          if (charY < this.canvas.height && charY > 0) {
+            const alpha = 1 - i / col.chars.length;
+            if (i === 0) {
+              this.ctx.fillStyle = '#fff';
+              this.ctx.globalAlpha = 1;
+            } else if (i < 3) {
+              this.ctx.fillStyle = '#a855f7';
+              this.ctx.globalAlpha = 0.9;
+            } else {
+              this.ctx.fillStyle = '#06b6d4';
+              this.ctx.globalAlpha = alpha * 0.6;
+            }
+            this.ctx.fillText(col.chars[i], col.x, charY);
+          }
+        }
+
+        col.y += col.speed;
+
+        if (col.y - col.chars.length * 14 > this.canvas.height) {
+          col.y = -col.chars.length * 14;
+          col.speed = Math.random() * 2 + 1;
+          for (let i = 0; i < col.chars.length; i++) {
+            const code = this.codeChars.split(' ')[Math.floor(Math.random() * 50)];
+            col.chars[i] = code;
+          }
+        }
+      });
+
+      this.ctx.globalAlpha = 1;
+      this.animationId = requestAnimationFrame(this.animate);
+    }
+
+    public destroy() {
+      cancelAnimationFrame(this.animationId);
+    }
+  }
+
+  const container = document.getElementById('coderain-container');
+  if (container) {
+    const canvas = document.getElementById('coderain-canvas') as HTMLCanvasElement;
+    if (canvas) {
+      const codeRain = new CodeRain(canvas);
+      (window as any).__codeRain = codeRain;
+    }
+  }
+</script>
+
+<style>
+  .background-container {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: linear-gradient(135deg, #0a0a0f 0%, #1a0a2e 50%, #0a0a0f 100%);
+  }
+
+  #coderain-canvas {
+    width: 100%;
+    height: 100%;
+  }
+</style>

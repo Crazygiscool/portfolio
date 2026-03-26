@@ -1,0 +1,91 @@
+---
+---
+
+<div class="background-container" id="aurora-container">
+  <canvas id="aurora-canvas"></canvas>
+</div>
+
+<script>
+  class Aurora {
+    private canvas: HTMLCanvasElement;
+    private ctx: CanvasRenderingContext2D;
+    private animationId: number = 0;
+    private time = 0;
+    private waves: Array<{amplitude: number; frequency: number; speed: number; y: number; color: string}> = [];
+
+    constructor(canvas: HTMLCanvasElement) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d')!;
+      this.resize();
+      this.init();
+      window.addEventListener('resize', () => this.resize());
+    }
+
+    private resize() {
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+    }
+
+    private init() {
+      this.waves = [
+        { amplitude: 50, frequency: 0.005, speed: 0.02, y: 0.15, color: 'rgba(16, 185, 129, 0.15)' },
+        { amplitude: 70, frequency: 0.003, speed: 0.015, y: 0.2, color: 'rgba(34, 197, 94, 0.12)' },
+        { amplitude: 60, frequency: 0.004, speed: 0.025, y: 0.25, color: 'rgba(168, 85, 247, 0.1)' },
+        { amplitude: 80, frequency: 0.002, speed: 0.01, y: 0.3, color: 'rgba(59, 130, 246, 0.08)' },
+        { amplitude: 40, frequency: 0.006, speed: 0.03, y: 0.35, color: 'rgba(16, 185, 129, 0.08)' }
+      ];
+      this.animate();
+    }
+
+    private animate = () => {
+      this.ctx.fillStyle = 'rgba(5, 5, 15, 0.1)';
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+      this.time += 1;
+
+      this.waves.forEach(wave => {
+        const yBase = this.canvas.height * wave.y;
+        
+        for (let x = 0; x < this.canvas.width; x++) {
+          const y = yBase + Math.sin(x * wave.frequency + this.time * wave.speed) * wave.amplitude;
+          
+          const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, 100);
+          gradient.addColorStop(0, wave.color);
+          gradient.addColorStop(1, 'transparent');
+          
+          this.ctx.fillStyle = gradient;
+          this.ctx.fillRect(x - 50, y - 100, 100, 200);
+        }
+      });
+
+      this.animationId = requestAnimationFrame(this.animate);
+    }
+
+    public destroy() {
+      cancelAnimationFrame(this.animationId);
+    }
+  }
+
+  const container = document.getElementById('aurora-container');
+  if (container) {
+    const canvas = document.getElementById('aurora-canvas') as HTMLCanvasElement;
+    if (canvas) {
+      const aurora = new Aurora(canvas);
+      (window as any).__aurora = aurora;
+    }
+  }
+</script>
+
+<style>
+  .background-container {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: linear-gradient(180deg, #0a0a1a 0%, #050510 50%, #0a0a0f 100%);
+  }
+
+  #aurora-canvas {
+    width: 100%;
+    height: 100%;
+  }
+</style>
