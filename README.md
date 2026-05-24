@@ -1,43 +1,5 @@
-# Astro Starter Kit: Minimal
+# Crazygiscool's portfolio
 
-```sh
-npm create astro@latest -- --template minimal
-```
+[![wakatime](https://wakatime.com/badge/user/94726172-a5c4-4c20-b247-f01d1fc63010/project/7c858d8f-078d-4dc8-ab9d-e59010b7fc52.svg)](https://wakatime.com/badge/user/94726172-a5c4-4c20-b247-f01d1fc63010/project/7c858d8f-078d-4dc8-ab9d-e59010b7fc52)
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
-
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
-
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+<img width="1363" height="685" alt="Screenshot_2026-05-23_21-57-16" src="https://github.com/user-attachments/assets/86535cd6-3317-4840-9fba-b559cb236ff6" />
