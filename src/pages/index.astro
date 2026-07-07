@@ -1,46 +1,22 @@
 ---
-import '../styles/global.css';
+import "../styles/global.css";
 
-interface WakaTimeStatsData {
-  range: string;
-  human_readable_range: string;
-  total_seconds: number;
-  total_seconds_including_other_language: number;
-  human_readable_total: string;
-  human_readable_total_including_other_language: string;
-  daily_average: number;
-  daily_average_including_other_language: number;
-  human_readable_daily_average: string;
-  human_readable_daily_average_including_other_language: string;
-  holidays: number;
-  days_including_holidays: number;
-  days_minus_holidays: number;
-  is_up_to_date: boolean;
-  is_including_today: boolean;
-  is_coding_activity_visible: boolean;
-  is_other_usage_visible: boolean;
-  start: string;
-  end: string;
-  timezone: string;
-  best_day: {
-    date: string;
-    text: string;
-    total_seconds: number;
-  } | null;
-  ai_additions: number;
-  ai_deletions: number;
-  human_additions: number;
-  human_deletions: number;
-  languages: WakaTimeStatItem[];
-  editors: WakaTimeStatItem[];
-  operating_systems: WakaTimeStatItem[];
-  categories: WakaTimeStatItem[];
-  projects: WakaTimeStatItem[];
-  dependencies: WakaTimeStatItem[];
-  machines: WakaTimeMachineItem[];
+interface Repo {
+  name: string;
+  description: string;
+  language: string;
+  stars: number;
+  url: string;
+  color: string;
 }
 
-interface WakaTimeStatItem {
+interface ContributionDay {
+  date: string;
+  count: number;
+  level: number;
+}
+
+interface WakaStatItem {
   name: string;
   total_seconds: number;
   percent: number;
@@ -48,137 +24,118 @@ interface WakaTimeStatItem {
   text: string;
   hours: number;
   minutes: number;
-  seconds: number;
 }
 
-interface WakaTimeMachineItem extends WakaTimeStatItem {
-  machine_name_id: string;
-}
-
-interface WakaTimeAllTimeData {
+interface WakaStatsData {
+  human_readable_range: string;
+  human_readable_total: string;
+  human_readable_daily_average: string;
+  human_readable_total_including_other_language: string;
+  total_seconds: number;
+  total_seconds_including_other_language: number;
   daily_average: number;
-  decimal: string;
-  digital: string;
-  is_up_to_date: boolean;
-  percent_calculated: number;
-  range: {
-    end: string;
-    end_date: string;
-    end_text: string;
-    start: string;
-    start_date: string;
-    start_text: string;
-    timezone: string;
-  };
+  days_minus_holidays: number;
+  best_day: { date: string; text: string; total_seconds: number } | null;
+  languages: WakaStatItem[];
+  editors: WakaStatItem[];
+  operating_systems: WakaStatItem[];
+  categories: WakaStatItem[];
+}
+
+interface WakaAllTimeData {
   text: string;
-  timeout: number;
+  digital: string;
+  daily_average: number;
+  range: { start_date: string };
   total_seconds: number;
 }
 
+interface StarredRepo {
+  name: string;
+  description: string | null;
+  language: string | null;
+  stars: number;
+  url: string;
+}
+
 const colorMap: Record<string, string> = {
-  Java: '#ea580c',
-  Python: '#eab308',
-  JavaScript: '#eab308',
-  TypeScript: '#3b82f6',
-  Dart: '#06b6d4',
-  GDScript: '#059669',
-  Lua: '#000080',
-  HTML: '#e34c26',
-  CSS: '#563d7c',
-  Shell: '#89e051',
+  Java: "#ea580c",
+  Python: "#eab308",
+  JavaScript: "#eab308",
+  TypeScript: "#3b82f6",
+  Dart: "#06b6d4",
+  GDScript: "#059669",
+  Lua: "#000080",
+  HTML: "#e34c26",
+  CSS: "#563d7c",
+  Shell: "#89e051",
+  Rust: "#dea584",
+  Go: "#00add8",
+  C: "#555555",
+  "C++": "#f34b7d",
+  Kotlin: "#a97bff",
+  Swift: "#ffac45",
 };
 
-const res = await fetch('https://api.github.com/users/crazygiscool/repos?sort=stars&per_page=100');
-const repos = await res.json();
-
-const projects = repos
+const res = await fetch(
+  "https://api.github.com/users/crazygiscool/repos?sort=stars&per_page=100",
+);
+const repos: Repo[] = (await res.json())
   .filter((r: any) => !r.fork && r.description)
   .sort((a: any, b: any) => b.stargazers_count - a.stargazers_count)
   .slice(0, 6)
   .map((r: any) => ({
     name: r.name,
     description: r.description,
-    language: r.language || 'Code',
+    language: r.language || "Code",
     stars: r.stargazers_count,
     url: r.html_url,
-    color: colorMap[r.language] || '#a855f7',
+    color: colorMap[r.language] || "#a855f7",
   }));
 
-const contributionsRes = await fetch('https://github-contributions-api.jogruber.de/v4/crazygiscool');
-const contributions = contributionsRes.ok ? await contributionsRes.json() : { contributions: [], totalContributions: 0 };
+const contributionsRes = await fetch(
+  "https://github-contributions-api.jogruber.de/v4/crazygiscool",
+);
+const contributions = contributionsRes.ok
+  ? await contributionsRes.json()
+  : { contributions: [], totalContributions: 0 };
 
-const contributionsData = contributions.contributions || [];
+const rawContributions = contributions.contributions || [];
 
-const today = new Date();
-const oneYearAgo = new Date();
-oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+const totalContributions = rawContributions.reduce(
+  (sum: number, d: any) => sum + (d.count || 0),
+  0,
+);
 
-const startDate = new Date(oneYearAgo);
-startDate.setDate(startDate.getDate() - startDate.getDay());
+const weeksData: ContributionDay[][] = [];
+let currentWeek: ContributionDay[] = [];
 
-const endDate = new Date(today);
-endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
-
-const totalContributions = contributionsData.reduce((sum: number, day: any) => sum + day.count, 0);
-
-const weeksData: { date: string; count: number; level: number }[][] = [];
-let currentWeekData: { date: string; count: number; level: number }[] = [];
-
-contributionsData.forEach((day: any) => {
+rawContributions.forEach((day: any) => {
   const count = day.count || 0;
   let level = 0;
   if (count > 0) {
     if (count <= 2) level = 1;
     else if (count <= 5) level = 2;
     else if (count <= 10) level = 3;
-    else if (count > 10) level = 4;
+    else level = 4;
   }
-  currentWeekData.push({ date: day.date, count, level });
-  if (currentWeekData.length === 7) {
-    weeksData.push(currentWeekData);
-    currentWeekData = [];
+  currentWeek.push({ date: day.date, count, level });
+  if (currentWeek.length === 7) {
+    weeksData.push(currentWeek);
+    currentWeek = [];
   }
 });
-if (currentWeekData.length > 0) {
-  weeksData.push(currentWeekData);
-}
+if (currentWeek.length > 0) weeksData.push(currentWeek);
 
-const displayWeeks: ({ date: string; count: number; level: number } | null)[][] = [];
-
-let currentWeek: ({ date: string; count: number; level: number } | null)[] = [null, null, null, null, null, null, null];
-
-for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-  const dayOfWeek = d.getDay();
-  
-  if (dayOfWeek === 0 && currentWeek.some(w => w !== null)) {
-    displayWeeks.push(currentWeek);
-    currentWeek = [null, null, null, null, null, null, null];
-  }
-  
-  const dateStr = d.toISOString().split('T')[0];
-  const existing = contributionsData.find((c: any) => c.date === dateStr);
-  const count = (existing && existing.count > 0) ? existing.count : 0;
-  
-  let level = 0;
-  if (count > 0) {
-    if (count <= 2) level = 1;
-    else if (count <= 5) level = 2;
-    else if (count <= 10) level = 3;
-    else if (count > 10) level = 4;
-  }
-  currentWeek[dayOfWeek] = { date: dateStr, count, level };
-}
-
-if (currentWeek.some(w => w !== null)) {
-  displayWeeks.push(currentWeek);
-}
-
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthNames = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
 const monthLabels: { month: string; weekIndex: number }[] = [];
 let lastMonth = -1;
-displayWeeks.forEach((week, i) => {
-  const firstDay = week.find(d => d !== null);
-  if (firstDay && firstDay.date) {
+weeksData.forEach((week, i) => {
+  const firstDay = week.find((d) => d !== null);
+  if (firstDay?.date) {
     const month = new Date(firstDay.date).getMonth();
     if (month !== lastMonth) {
       monthLabels.push({ month: monthNames[month], weekIndex: i });
@@ -187,1161 +144,612 @@ displayWeeks.forEach((week, i) => {
   }
 });
 
-const yearsContributions = Math.max(...contributionsData.reduce((acc: number[][], y: any) => {
-  if (y.weeks) {
-    y.weeks.forEach((w: any) => {
-      w.contributions.forEach((c: any) => {
-        if (c.date && c.date.startsWith(new Date().getFullYear().toString())) {
-          acc[0] = (acc[0] || 0) + c.count;
-        }
-      });
-    });
-  }
-  return acc;
-}, [0]), 0);
-
-const thisYearContributions = yearsContributions || totalContributions;
-
 const wakaKey = import.meta.env.WAKATIME_API_KEY;
-let wakaStats: { data: WakaTimeStatsData } | null = null;
-let wakaAllTimeStats: { data: WakaTimeAllTimeData } | null = null;
+let wakaStats: { data: WakaStatsData } | null = null;
+let wakaAllTimeStats: { data: WakaAllTimeData } | null = null;
 
 if (wakaKey) {
-  const wakaRes = await fetch('https://wakatime.com/api/v1/users/current/stats/last_7_days', {
-    headers: { 'Authorization': `Basic ${btoa(wakaKey)}` }
-  });
+  const wakaRes = await fetch(
+    "https://wakatime.com/api/v1/users/current/stats/last_7_days",
+    { headers: { Authorization: `Basic ${btoa(wakaKey)}` } },
+  );
   wakaStats = await wakaRes.json();
-  
-  const wakaAllRes = await fetch('https://wakatime.com/api/v1/users/current/all_time_since_today', {
-    headers: { 'Authorization': `Basic ${btoa(wakaKey)}` }
-  });
+
+  const wakaAllRes = await fetch(
+    "https://wakatime.com/api/v1/users/current/all_time_since_today",
+    { headers: { Authorization: `Basic ${btoa(wakaKey)}` } },
+  );
   wakaAllTimeStats = await wakaAllRes.json();
 }
 
-const starredRes = await fetch('https://api.github.com/users/crazygiscool/starred?per_page=30&sort=updated');
-const starredRepos = starredRes.ok ? await starredRes.json() : [];
+const starredRes = await fetch(
+  "https://api.github.com/users/crazygiscool/starred?per_page=30&sort=updated",
+);
+const starredRepos: StarredRepo[] = starredRes.ok
+  ? (await starredRes.json()).slice(0, 6).map((r: any) => ({
+      name: r.name,
+      description: r.description,
+      language: r.language || "Code",
+      stars: r.stargazers_count,
+      url: r.html_url,
+    }))
+  : [];
 
 const skills = [
-  { name: 'Java', level: 85, color: '#ea580c' },
-  { name: 'GDScript', level: 80, color: '#059669' },
-  { name: 'Dart', level: 60, color: '#06b6d4' },
-  { name: 'Python', level: 70, color: '#eab308' },
-  { name: 'TypeScript', level: 65, color: '#3b82f6' },
-  { name: 'JavaScript', level: 70, color: '#eab308' },
+  { name: "Java", level: 85, color: "#ea580c" },
+  { name: "GDScript", level: 80, color: "#059669" },
+  { name: "Dart", level: 60, color: "#06b6d4" },
+  { name: "Python", level: 70, color: "#eab308" },
+  { name: "TypeScript", level: 65, color: "#3b82f6" },
+  { name: "JavaScript", level: 70, color: "#eab308" },
+  { name: "Lua", level: 55, color: "#000080" },
+  { name: "Go", level: 45, color: "#00add8" },
 ];
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" class="bg-bg text-text antialiased">
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content="Portfolio for Crazygiscool - Developer" />
+    <meta name="description" content="Crazygiscool — Developer & Systems Engineer" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>Crazygiscool - Developer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <title>Crazygiscool — Developer & Systems Engineer</title>
   </head>
-  <body>
-    <nav>
-      <div class="container">
-        <a href="#" class="logo">crazyg.is-a.dev</a>
-        <div class="links">
-          <a href="#projects">Projects</a>
-          <a href="#starred">Starred</a>
-          <a href="#wakatime">WakaTime</a>
-          <a href="#contact">Contact</a>
+  <body class="min-h-screen bg-bg text-text">
+    <nav class="fixed top-0 left-0 right-0 z-50 h-14 border-b border-border bg-bg/80 backdrop-blur-md">
+      <div class="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
+        <a href="#" class="font-mono text-sm font-bold tracking-tight text-accent hover:text-accent-hover transition-colors">
+          $ whoami
+        </a>
+        <div class="nav-links flex items-center gap-6 font-mono text-xs text-text-muted">
+          <a href="#tech" class="hover:text-accent transition-colors">// tech</a>
+          <a href="#projects" class="hover:text-accent transition-colors">// projects</a>
+          <a href="#stats" class="hover:text-accent transition-colors">// stats</a>
+          <a href="#contact" class="hover:text-accent transition-colors">// contact</a>
         </div>
       </div>
     </nav>
 
-    <div class="bg-dropdown" id="bgDropdown">
-      <button class="bg-dropdown-trigger" id="bgDropdownTrigger">
-        <span class="bg-dropdown-label">Background</span>
-        <svg class="bg-dropdown-arrow" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M4 6l4 4 4-4"/>
-        </svg>
-      </button>
-      <div class="bg-dropdown-menu" id="bgDropdownMenu">
-        <button class="bg-dropdown-item active" data-bg="0">Fireflies</button>
-        <button class="bg-dropdown-item" data-bg="1">Matrix</button>
-        <button class="bg-dropdown-item" data-bg="2">Starfield</button>
-        <button class="bg-dropdown-item" data-bg="3">Waves</button>
-        <button class="bg-dropdown-item" data-bg="4">Minecraft</button>
-        <button class="bg-dropdown-item" data-bg="5">Code</button>
-        <button class="bg-dropdown-item" data-bg="6">Blobs</button>
-        <button class="bg-dropdown-item" data-bg="7">Noise</button>
-        <button class="bg-dropdown-item" data-bg="8">Aurora</button>
-        <button class="bg-dropdown-item" data-bg="9">Falling Blocks</button>
-      </div>
-    </div>
+    <main class="pt-14">
+      <!-- HERO -->
+      <section class="relative mx-auto max-w-6xl px-6 pt-24 pb-20 md:pt-32 md:pb-28">
+        <div class="hero-grid grid gap-12 md:grid-cols-[1.3fr_1fr]">
+          <div class="animate-fade-in flex flex-col gap-5">
+            <span class="font-mono text-xs font-medium tracking-[0.2em] text-accent uppercase">
+              Developer & Systems Engineer
+            </span>
+            <h1 class="font-mono text-4xl font-extrabold leading-tight tracking-tight md:text-5xl lg:text-6xl">
+              CRAZY G<span class="text-accent">_</span>
+              <span class="animate-blink text-accent-cyan">|</span>
+            </h1>
+            <div class="flex flex-wrap gap-2">
+              <span class="inline-block rounded border border-border bg-surface px-3 py-1 font-mono text-xs text-text-muted">
+                $ cat /etc/bio
+              </span>
+              <span class="inline-block rounded border border-border bg-surface px-3 py-1 font-mono text-xs text-accent-green">
+                > Developer passionate about Minecraft plugins, Godot games & systems tooling
+              </span>
+            </div>
+            <div class="flex items-center gap-4 font-mono text-sm">
+              <div class="flex items-baseline gap-1.5">
+                <span class="text-2xl font-bold text-text">{totalContributions}</span>
+                <span class="text-xs text-text-muted">contributions / yr</span>
+              </div>
+              <div class="flex items-baseline gap-1.5">
+                <span class="text-2xl font-bold text-text">{repos.length}</span>
+                <span class="text-xs text-text-muted">projects</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <a href="https://github.com/crazygiscool" target="_blank" rel="noopener noreferrer" class="group inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 font-mono text-xs text-text-muted hover:border-accent hover:text-accent transition-all duration-150">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                <span>github</span>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+              </a>
+              <a href="https://youtube.com/@crazygiscool" target="_blank" rel="noopener noreferrer" class="group inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 font-mono text-xs text-text-muted hover:border-accent-pink hover:text-accent-pink transition-all duration-150">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                <span>youtube</span>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+              </a>
+              <a href="mailto:crazygiscool@proton.me" class="group inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 font-mono text-xs text-text-muted hover:border-accent-cyan hover:text-accent-cyan transition-all duration-150">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                <span>email</span>
+                <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+              </a>
+            </div>
+          </div>
 
-    <div class="mc-tooltip" id="mcTooltip"></div>
-
-    <main>
-      <section class="hero">
-        <div class="hero-background">
-          <div id="backgroundContainer">
-            <div class="bg-layer active" id="bg-0">
-              <div class="background-container" id="fireflies-container">
-                <canvas id="fireflies-canvas"></canvas>
-              </div>
-            </div>
-            <div class="bg-layer" id="bg-1">
-              <div class="background-container" id="matrix-container">
-                <canvas id="matrix-canvas"></canvas>
-              </div>
-            </div>
-            <div class="bg-layer" id="bg-2">
-              <div class="background-container" id="starfield-container">
-                <canvas id="starfield-canvas"></canvas>
-              </div>
-            </div>
-            <div class="bg-layer" id="bg-3">
-              <div class="gradient-waves">
-                <div class="wave wave1"></div>
-                <div class="wave wave2"></div>
-                <div class="wave wave3"></div>
-                <div class="wave wave4"></div>
-              </div>
-            </div>
-            <div class="bg-layer" id="bg-4">
-              <div class="background-container" id="mc-terrain-container">
-                <canvas id="mc-terrain-canvas"></canvas>
-              </div>
-            </div>
-            <div class="mc-background" id="mcBackground">
-              <div class="mc-scroll-track" id="mcScrollTrack"></div>
-            </div>
-            <div class="bg-layer" id="bg-5">
-              <div class="background-container" id="coderain-container">
-                <canvas id="coderain-canvas"></canvas>
-              </div>
-            </div>
-            <div class="bg-layer" id="bg-6">
-              <div class="background-container" id="blobs-container">
-                <canvas id="blobs-canvas"></canvas>
-              </div>
-            </div>
-            <div class="bg-layer" id="bg-7">
-              <div class="background-container" id="noise-container">
-                <canvas id="noise-canvas"></canvas>
-              </div>
-            </div>
-            <div class="bg-layer" id="bg-8">
-              <div class="background-container" id="aurora-container">
-                <canvas id="aurora-canvas"></canvas>
-              </div>
-            </div>
-            <div class="bg-layer" id="bg-9">
-              <div class="background-container" id="falling-blocks-container">
-                <canvas id="falling-blocks-canvas"></canvas>
+          <div class="animate-slide-in flex items-start justify-center md:justify-end">
+            <div
+              id="contributionGraph"
+              class="contribution-scroll w-full overflow-x-auto pb-2"
+              style="mask-image: linear-gradient(to left, black 80%, transparent 100%); -webkit-mask-image: linear-gradient(to left, black 80%, transparent 100%);"
+            >
+              <div id="graphContainer" class="contribution-grid">
+                <script id="contribData" type="application/json" set:html={JSON.stringify(weeksData)}></script>
+                <script id="monthLabels" type="application/json" set:html={JSON.stringify(monthLabels)}></script>
               </div>
             </div>
           </div>
-          <div class="mc-background" id="mcBackground">
-            <div class="mc-scroll-track" id="mcScrollTrack"></div>
-          </div>
-        </div>
-        <script id="contributionData" type="application/json" set:html={JSON.stringify(displayWeeks)}></script>
-        
-        <div class="hero-text">
-          <div class="hero-box">
-            <p class="hero-greeting">👏 Hello There! 👏</p>
-            <h1>I am <span>Crazygiscool</span></h1>
-            <div class="hero-stat-row">
-              <div class="hero-stat">
-                <span class="hero-stat-value">{thisYearContributions}</span>
-                <span class="hero-stat-label">contributions this year</span>
-              </div>
-              <div class="hero-links">
-                <a href="https://github.com/crazygiscool" class="hero-link" target="_blank" rel="noopener noreferrer">
-                  <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                </a>
-                <a href="https://youtube.com/@crazygiscool" class="hero-link" target="_blank" rel="noopener noreferrer">
-                  <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                </a>
-                <a href="mailto:crazygiscool@proton.me" class="hero-link">
-                  <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-                </a>
-              </div>
-            </div>
-            <p class="hero-bio">Developer passionate about Minecraft plugins, Godot games, and building useful tools.</p>
-          </div>
-        </div>
-        <div class="hero-contributions" id="heroContributions">
-          <div class="mc-graph-container" id="mcGraphContainer">
-            <div class="mc-scroll-track" id="mcGraphTrack"></div>
-          </div>
-          <div class="mc-tooltip" id="contributionTooltip"></div>
         </div>
       </section>
 
-      <section id="projects" class="section">
-        <div class="container">
-          <h2>Projects</h2>
-          <p class="section-subtitle">Things I've built</p>
-          <div class="projects-grid">
-            {projects.map((project) => (
-              <a href={project.url} target="_blank" rel="noopener noreferrer" class="project-card">
-                <div class="project-header">
-                  <span class="project-dot" style={`background: ${project.color}`}></span>
-                  <span class="project-name">{project.name}</span>
-                  {project.stars > 0 && <span class="project-stars">★ {project.stars}</span>}
+      <!-- TECH STACK -->
+      <section id="tech" class="border-t border-border py-20">
+        <div class="mx-auto max-w-6xl px-6">
+          <div class="mb-10 flex items-center gap-3">
+            <span class="font-mono text-xs text-accent">01</span>
+            <h2 class="font-mono text-sm font-bold tracking-wider uppercase text-text-muted">Tech Stack</h2>
+            <div class="h-px flex-1 bg-border"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            {skills.map((skill) => (
+              <div
+                class="group flex items-center gap-3 rounded-xl border border-border bg-surface p-4 hover:border-[var(--skill-color)]/50 transition-all duration-200"
+                style={`--skill-color: ${skill.color}`}
+              >
+                <div
+                  class="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={`background: ${skill.color}`}
+                ></div>
+                <div class="flex flex-1 items-center justify-between">
+                  <span class="font-mono text-sm font-medium text-text">{skill.name}</span>
+                  <span class="font-mono text-xs text-text-dim">{skill.level}%</span>
                 </div>
-                <p class="project-desc">{project.description}</p>
-                <span class="project-lang">{project.language}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <!-- PROJECTS -->
+      <section id="projects" class="border-t border-border py-20">
+        <div class="mx-auto max-w-6xl px-6">
+          <div class="mb-10 flex items-center gap-3">
+            <span class="font-mono text-xs text-accent">02</span>
+            <h2 class="font-mono text-sm font-bold tracking-wider uppercase text-text-muted">Projects</h2>
+            <div class="h-px flex-1 bg-border"></div>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {repos.map((project) => (
+              <a
+                href={project.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="group flex flex-col rounded-xl border border-border bg-surface p-5 hover:border-accent/40 hover:-translate-y-0.5 transition-all duration-200"
+              >
+                <div class="mb-3 flex items-center gap-2.5">
+                  <span
+                    class="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={`background: ${project.color}`}
+                  ></span>
+                  <span class="flex-1 truncate font-mono text-sm font-semibold text-text group-hover:text-accent transition-colors">
+                    {project.name}
+                  </span>
+                  {project.stars > 0 && (
+                    <span class="font-mono text-xs text-text-dim">&starf; {project.stars}</span>
+                  )}
+                </div>
+                <p class="mb-4 flex-1 text-sm leading-relaxed text-text-muted">
+                  {project.description}
+                </p>
+                <div class="mt-auto flex items-center justify-between">
+                  <span
+                    class="inline-block rounded-full border border-border px-2.5 py-0.5 font-mono text-[11px] text-text-muted"
+                  >
+                    {project.language}
+                  </span>
+                  <span class="font-mono text-xs text-text-dim opacity-0 group-hover:opacity-100 transition-opacity">
+                    View Source →
+                  </span>
+                </div>
               </a>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="starred" class="section section-alt">
-        <div class="container">
-          <h2>Starred Repos</h2>
-          <p class="section-subtitle">Recently starred</p>
-          {starredRepos.length > 0 ? (
-            <div class="projects-grid">
-              {starredRepos.slice(0, 6).map((repo: any) => (
-                <a href={repo.html_url} target="_blank" rel="noopener noreferrer" class="project-card">
-                  <div class="project-header">
-                    <span class="project-name">{repo.name}</span>
-                    <span class="project-stars">★ {repo.stargazers_count}</span>
-                  </div>
-                  <p class="project-desc">{repo.description || 'No description'}</p>
-                  <span class="project-lang">{repo.language || 'Code'}</span>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <p class="text-center text-gray-500">No starred repositories</p>
-          )}
-        </div>
-      </section>
-
+      <!-- WAKATIME SYSTEM STATS -->
       {wakaStats && wakaStats.data && (
-        <section id="wakatime" class="section">
-          <div class="container">
-            <h2>WakaTime</h2>
-            <p class="section-subtitle">Coding statistics • {wakaStats.data.human_readable_range}</p>
-            
-            <div class="waka-full-grid">
-              <div class="waka-card waka-summary">
-                <div class="waka-summary-stats">
-                  <div class="waka-stat-inline">
-                    <span class="waka-stat-value">{wakaStats.data.human_readable_total}</span>
-                    <span class="waka-stat-label">Total Time</span>
-                  </div>
-                  <div class="waka-stat-inline">
-                    <span class="waka-stat-value">{wakaStats.data.human_readable_daily_average}</span>
-                    <span class="waka-stat-label">Daily Avg</span>
-                  </div>
-                  <div class="waka-stat-inline">
-                    <span class="waka-stat-value">{wakaStats.data.best_day?.text || '-'}</span>
-                    <span class="waka-stat-label">Best Day</span>
-                  </div>
-                  <div class="waka-stat-inline">
-                    <span class="waka-stat-value">{wakaStats.data.days_minus_holidays || 0}</span>
-                    <span class="waka-stat-label">Active Days</span>
-                  </div>
-                </div>
-              </div>
+        <section id="stats" class="border-t border-border py-20">
+          <div class="mx-auto max-w-6xl px-6">
+            <div class="mb-10 flex items-center gap-3">
+              <span class="font-mono text-xs text-accent">03</span>
+              <h2 class="font-mono text-sm font-bold tracking-wider uppercase text-text-muted">System Stats</h2>
+              <div class="h-px flex-1 bg-border"></div>
+            </div>
 
-              <div class="waka-card waka-all-time">
-                <h3>All Time Since Today</h3>
-                <div class="waka-stats-grid">
-                  <div class="waka-stat-box">
-                    <span class="waka-stat-value">{wakaAllTimeStats?.data?.text || '-'}</span>
-                    <span class="waka-stat-label">Total Time</span>
-                  </div>
-                  <div class="waka-stat-box">
-                    <span class="waka-stat-value">{wakaAllTimeStats?.data?.digital || '-'}</span>
-                    <span class="waka-stat-label">Digital</span>
-                  </div>
-                  <div class="waka-stat-box">
-                    <span class="waka-stat-value">{Math.round((wakaAllTimeStats?.data?.daily_average || 0) / 3600 * 10) / 10}h</span>
-                    <span class="waka-stat-label">Daily Avg</span>
-                  </div>
-                  <div class="waka-stat-box">
-                    <span class="waka-stat-value">{wakaAllTimeStats?.data?.range?.start_date || '-'}</span>
-                    <span class="waka-stat-label">Since</span>
-                  </div>
+            <!-- Terminal-style summary -->
+            <div class="mb-8 overflow-hidden rounded-xl border border-border bg-surface font-mono text-sm">
+              <div class="flex items-center gap-2 border-b border-border bg-bg-alt px-4 py-2.5">
+                <span class="h-3 w-3 rounded-full bg-danger/70"></span>
+                <span class="h-3 w-3 rounded-full bg-yellow-500/70"></span>
+                <span class="h-3 w-3 rounded-full bg-accent-green/70"></span>
+                <span class="ml-2 text-xs text-text-dim">wakatime@stats -- {wakaStats.data.human_readable_range}</span>
+              </div>
+              <div class="space-y-1.5 p-4 text-xs leading-relaxed text-text-muted">
+                <div class="flex gap-2">
+                  <span class="text-accent-green">$</span>
+                  <span>cat /proc/coding_activity</span>
                 </div>
+                <div class="flex flex-wrap gap-x-6 gap-y-2 pl-4 text-text">
+                  <span>Total: <span class="font-bold text-accent">{wakaStats.data.human_readable_total}</span></span>
+                  <span>Daily: <span class="font-bold text-accent-cyan">{wakaStats.data.human_readable_daily_average}</span></span>
+                  <span>Active: <span class="font-bold text-accent-green">{wakaStats.data.days_minus_holidays}d</span></span>
+                  <span>Best: <span class="font-bold text-accent-pink">{wakaStats.data.best_day?.text || '-'}</span></span>
+                </div>
+                {wakaAllTimeStats?.data && (
+                  <div class="flex gap-2 pt-0.5">
+                    <span class="text-accent-green">$</span>
+                    <span>cat /proc/all_time_coding</span>
+                  </div>
+                )}
+                {wakaAllTimeStats?.data && (
+                  <div class="flex flex-wrap gap-x-6 gap-y-2 pl-4 text-text">
+                    <span>All time: <span class="font-bold text-accent">{wakaAllTimeStats.data.text}</span></span>
+                    <span>Daily avg: <span class="font-bold text-accent-cyan">{Math.round((wakaAllTimeStats.data.daily_average || 0) / 3600 * 10) / 10}h</span></span>
+                    <span>Since: <span class="font-bold text-text-muted">{wakaAllTimeStats.data.range.start_date}</span></span>
+                  </div>
+                )}
               </div>
             </div>
 
-              <div class="waka-tabs">
-                <div class="waka-tab-buttons">
-                  <button class="waka-tab-btn active" data-tab="languages">Languages</button>
-                  <button class="waka-tab-btn" data-tab="editors">Editors</button>
-                  <button class="waka-tab-btn" data-tab="os">OS</button>
-                  <button class="waka-tab-btn" data-tab="categories">Categories</button>
-                </div>
+            <!-- Tabs -->
+            <div class="waka-tabs">
+              <div class="mb-5 flex flex-wrap gap-2">
+                <button class="waka-tab-btn active rounded-lg border border-accent/30 bg-accent/10 px-3.5 py-2 font-mono text-xs font-medium text-accent hover:bg-accent/20" data-tab="languages">Languages</button>
+                <button class="waka-tab-btn rounded-lg border border-border bg-surface px-3.5 py-2 font-mono text-xs font-medium text-text-muted hover:border-accent/30 hover:text-accent" data-tab="editors">Editors</button>
+                <button class="waka-tab-btn rounded-lg border border-border bg-surface px-3.5 py-2 font-mono text-xs font-medium text-text-muted hover:border-accent/30 hover:text-accent" data-tab="os">OS</button>
+                <button class="waka-tab-btn rounded-lg border border-border bg-surface px-3.5 py-2 font-mono text-xs font-medium text-text-muted hover:border-accent/30 hover:text-accent" data-tab="categories">Categories</button>
+              </div>
 
-                <div class="waka-tab-content active" id="tab-languages">
-                  <div class="waka-card waka-pie-card">
-                    <script id="langData" type="application/json" set:html={JSON.stringify(wakaStats.data.languages.slice(0, 8))}></script>
-                    <div class="pie-wrapper">
-                      <div class="pie-container" id="pieContainer">
-                        <div 
-                          class="pie-chart"
-                          id="pieChart"
-                          style={(() => {
-                            const topLangs = wakaStats.data.languages.slice(0, 8);
-                            const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
-                            let gradient = '';
-                            let currentDeg = 0;
-                            topLangs.forEach((lang, i) => {
-                              const deg = (lang.percent / 100) * 360;
-                              gradient += `${colors[i % colors.length]} ${currentDeg}deg ${currentDeg + deg}deg, `;
-                              currentDeg += deg;
-                            });
-                            return `background: conic-gradient(${gradient.slice(0, -2)});`;
-                          })()}
-                        >
-                          <div class="pie-center">
-                            <span class="pie-center-text" id="pieCenterText">{wakaStats.data.languages[0]?.name || '-'}</span>
-                            <span class="pie-center-time" id="pieCenterTime">{wakaStats.data.languages[0]?.text || '-'}</span>
-                            <span class="pie-center-percent" id="pieCenterPercent">{wakaStats.data.languages[0]?.percent.toFixed(1) || '0'}%</span>
-                          </div>
+              <div class="waka-tab-content active" id="tab-languages">
+                <div class="rounded-xl border border-border bg-surface p-6">
+                  <script id="langData" type="application/json" set:html={JSON.stringify(wakaStats.data.languages.slice(0, 8))}></script>
+                  <div class="flex flex-col items-center gap-8 md:flex-row md:items-start">
+                    <div class="relative flex items-center justify-center" id="pieContainer">
+                      <div
+                        id="pieChart"
+                        class="h-60 w-60 rounded-full shadow-lg shadow-accent/10 cursor-pointer transition-transform duration-200 hover:scale-[1.02]"
+                        style={(() => {
+                          const topLangs = wakaStats.data.languages.slice(0, 8);
+                          const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
+                          let gradient = "";
+                          let currentDeg = 0;
+                          topLangs.forEach((lang, i) => {
+                            const deg = (lang.percent / 100) * 360;
+                            gradient += `${colors[i % colors.length]} ${currentDeg}deg ${currentDeg + deg}deg, `;
+                            currentDeg += deg;
+                          });
+                          return `background: conic-gradient(${gradient.slice(0, -2)});`;
+                        })()}
+                      >
+                        <div class="absolute inset-8 flex flex-col items-center justify-center rounded-full bg-bg text-center">
+                          <span class="font-mono text-sm font-bold text-text" id="pieCenterText">{wakaStats.data.languages[0]?.name || '-'}</span>
+                          <span class="font-mono text-xs text-text-muted" id="pieCenterTime">{wakaStats.data.languages[0]?.text || '-'}</span>
+                          <span class="font-mono text-sm font-semibold text-accent" id="pieCenterPercent">{wakaStats.data.languages[0]?.percent.toFixed(1) || '0'}%</span>
                         </div>
-                        <div class="pie-tooltip" id="pieTooltip"></div>
                       </div>
-                      <div class="pie-legend">
-                        {wakaStats.data.languages.slice(0, 8).map((lang, i) => {
-                          const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
-                          return (
-                            <div class="pie-legend-item" data-index={i}>
-                              <span class="pie-legend-color" style={`background: ${colors[i % colors.length]}`}></span>
-                              <span class="pie-legend-name">{lang.name}</span>
-                              <span class="pie-legend-percent">{lang.percent.toFixed(1)}%</span>
-                            </div>
-                          );
-                        })}
-                      </div>
+                      <div id="pieTooltip" class="pointer-events-none absolute z-10 min-w-[160px] rounded-lg border border-accent/50 bg-bg/95 p-3 text-xs opacity-0 shadow-xl backdrop-blur-sm transition-opacity duration-150" style="box-shadow: 0 4px 20px rgba(0,0,0,0.5);"></div>
                     </div>
-                  </div>
-                </div>
-
-                <div class="waka-tab-content" id="tab-editors">
-                  <div class="waka-card">
-                    <div class="waka-blocks-grid">
-                      {wakaStats.data.editors && wakaStats.data.editors.length > 0 ? (
-                        wakaStats.data.editors.map((editor, i) => {
-                          const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
-                          return (
-                            <div class="waka-block" style={`--block-color: ${colors[i % colors.length]}`}>
-                              <div class="waka-block-header">
-                                <span class="waka-block-name">{editor.name}</span>
-                                <span class="waka-block-percent">{editor.percent.toFixed(1)}%</span>
-                              </div>
-                              <div class="waka-block-bar">
-                                <div class="waka-block-fill" style={`width: ${editor.percent}%`}></div>
-                              </div>
-                              <span class="waka-block-time">{editor.text}</span>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <p class="text-gray-500">No editor data</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div class="waka-tab-content" id="tab-os">
-                  <div class="waka-card">
-                    <div class="waka-blocks-grid">
-                      {wakaStats.data.operating_systems && wakaStats.data.operating_systems.length > 0 ? (
-                        wakaStats.data.operating_systems.map((os, i) => {
-                          const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
-                          return (
-                            <div class="waka-block" style={`--block-color: ${colors[i % colors.length]}`}>
-                              <div class="waka-block-header">
-                                <span class="waka-block-name">{os.name}</span>
-                                <span class="waka-block-percent">{os.percent.toFixed(1)}%</span>
-                              </div>
-                              <div class="waka-block-bar">
-                                <div class="waka-block-fill" style={`width: ${os.percent}%`}></div>
-                              </div>
-                              <span class="waka-block-time">{os.text}</span>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <p class="text-gray-500">No OS data</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div class="waka-tab-content" id="tab-categories">
-                  <div class="waka-card">
-                    <div class="waka-blocks-grid">
-                      {wakaStats.data.categories && wakaStats.data.categories.length > 0 ? (
-                        wakaStats.data.categories.map((cat, i) => {
-                          const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
-                          return (
-                            <div class="waka-block" style={`--block-color: ${colors[i % colors.length]}`}>
-                              <div class="waka-block-header">
-                                <span class="waka-block-name">{cat.name}</span>
-                                <span class="waka-block-percent">{cat.percent.toFixed(1)}%</span>
-                              </div>
-                              <div class="waka-block-bar">
-                                <div class="waka-block-fill" style={`width: ${cat.percent}%`}></div>
-                              </div>
-                              <span class="waka-block-time">{cat.text}</span>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <p class="text-gray-500">No category data</p>
-                      )}
+                    <div class="flex flex-wrap justify-center gap-2 md:flex-1 md:justify-start md:self-center">
+                      {wakaStats.data.languages.slice(0, 8).map((lang, i) => {
+                        const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
+                        return (
+                          <div class="pie-legend-item flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-xs transition-colors hover:bg-accent/10" data-index={i}>
+                            <span class="h-2.5 w-2.5 shrink-0 rounded-full" style={`background: ${colors[i % colors.length]}`}></span>
+                            <span class="font-mono text-text-muted">{lang.name}</span>
+                            <span class="font-mono text-text-dim">{lang.percent.toFixed(1)}%</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
               </div>
+
+              <div class="waka-tab-content" id="tab-editors">
+                <div class="rounded-xl border border-border bg-surface p-6">
+                  {wakaStats.data.editors && wakaStats.data.editors.length > 0 ? (
+                    <div class="grid gap-4 sm:grid-cols-2">
+                      {wakaStats.data.editors.map((editor, i) => {
+                        const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
+                        return (
+                          <div class="waka-block rounded-lg border border-border bg-surface-alt p-4">
+                            <div class="mb-2 flex items-center justify-between">
+                              <span class="font-mono text-sm font-medium text-text">{editor.name}</span>
+                              <span class="font-mono text-xs text-text-muted">{editor.percent.toFixed(1)}%</span>
+                            </div>
+                            <div class="mb-2 h-1.5 overflow-hidden rounded-full bg-border">
+                              <div class="h-full rounded-full transition-all" style={`width: ${editor.percent}%; background: ${colors[i % colors.length]}`}></div>
+                            </div>
+                            <span class="font-mono text-xs text-text-dim">{editor.text}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p class="font-mono text-xs text-text-muted">No editor data</p>
+                  )}
+                </div>
+              </div>
+
+              <div class="waka-tab-content" id="tab-os">
+                <div class="rounded-xl border border-border bg-surface p-6">
+                  {wakaStats.data.operating_systems && wakaStats.data.operating_systems.length > 0 ? (
+                    <div class="grid gap-4 sm:grid-cols-2">
+                      {wakaStats.data.operating_systems.map((os, i) => {
+                        const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
+                        return (
+                          <div class="waka-block rounded-lg border border-border bg-surface-alt p-4">
+                            <div class="mb-2 flex items-center justify-between">
+                              <span class="font-mono text-sm font-medium text-text">{os.name}</span>
+                              <span class="font-mono text-xs text-text-muted">{os.percent.toFixed(1)}%</span>
+                            </div>
+                            <div class="mb-2 h-1.5 overflow-hidden rounded-full bg-border">
+                              <div class="h-full rounded-full transition-all" style={`width: ${os.percent}%; background: ${colors[i % colors.length]}`}></div>
+                            </div>
+                            <span class="font-mono text-xs text-text-dim">{os.text}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p class="font-mono text-xs text-text-muted">No OS data</p>
+                  )}
+                </div>
+              </div>
+
+              <div class="waka-tab-content" id="tab-categories">
+                <div class="rounded-xl border border-border bg-surface p-6">
+                  {wakaStats.data.categories && wakaStats.data.categories.length > 0 ? (
+                    <div class="grid gap-4 sm:grid-cols-2">
+                      {wakaStats.data.categories.map((cat, i) => {
+                        const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
+                        return (
+                          <div class="waka-block rounded-lg border border-border bg-surface-alt p-4">
+                            <div class="mb-2 flex items-center justify-between">
+                              <span class="font-mono text-sm font-medium text-text">{cat.name}</span>
+                              <span class="font-mono text-xs text-text-muted">{cat.percent.toFixed(1)}%</span>
+                            </div>
+                            <div class="mb-2 h-1.5 overflow-hidden rounded-full bg-border">
+                              <div class="h-full rounded-full transition-all" style={`width: ${cat.percent}%; background: ${colors[i % colors.length]}`}></div>
+                            </div>
+                            <span class="font-mono text-xs text-text-dim">{cat.text}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p class="font-mono text-xs text-text-muted">No category data</p>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       )}
 
-      <section id="contact" class="contact">
-        <div class="container">
-          <h2>Get in Touch</h2>
-          <p class="section-subtitle">Feel free to reach out</p>
-          <div class="contact-links">
-            <a href="mailto:crazygiscool@proton.me" class="contact-btn">
+      <!-- STARRED REPOS -->
+      <section class="border-t border-border py-20">
+        <div class="mx-auto max-w-6xl px-6">
+          <div class="mb-10 flex items-center gap-3">
+            <span class="font-mono text-xs text-accent">04</span>
+            <h2 class="font-mono text-sm font-bold tracking-wider uppercase text-text-muted">Starred Repos</h2>
+            <div class="h-px flex-1 bg-border"></div>
+          </div>
+          {starredRepos.length > 0 ? (
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {starredRepos.map((repo) => (
+                <a
+                  href={repo.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="group flex flex-col rounded-xl border border-border bg-surface p-4 hover:border-accent/40 hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <div class="mb-2 flex items-center gap-2">
+                    <span class="flex-1 truncate font-mono text-sm font-medium text-text group-hover:text-accent transition-colors">
+                      {repo.name}
+                    </span>
+                    <span class="shrink-0 font-mono text-xs text-text-dim">&starf; {repo.stars}</span>
+                  </div>
+                  <p class="mb-3 flex-1 text-xs leading-relaxed text-text-muted">
+                    {repo.description || 'No description'}
+                  </p>
+                  <span class="inline-block self-start rounded-full border border-border px-2 py-0.5 font-mono text-[11px] text-text-muted">
+                    {repo.language || 'Code'}
+                  </span>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p class="font-mono text-xs text-text-muted">No starred repositories</p>
+          )}
+        </div>
+      </section>
+
+      <!-- CONTACT -->
+      <section id="contact" class="border-t border-border py-20">
+        <div class="mx-auto max-w-6xl px-6 text-center">
+          <div class="mb-8 flex items-center justify-center gap-3">
+            <span class="font-mono text-xs text-accent">05</span>
+            <h2 class="font-mono text-sm font-bold tracking-wider uppercase text-text-muted">Contact</h2>
+            <div class="h-px w-12 bg-border"></div>
+          </div>
+          <p class="mb-6 font-mono text-sm text-text-muted">
+            $ echo "Let's build something."
+          </p>
+          <div class="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <a
+              href="mailto:crazygiscool@proton.me"
+              class="inline-flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-5 py-3 font-mono text-sm font-medium text-accent hover:bg-accent/20 transition-all duration-150"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
               crazygiscool@proton.me
             </a>
-            <a href="https://github.com/crazygiscool" class="contact-btn">
-              GitHub
+            <a
+              href="https://github.com/crazygiscool"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-5 py-3 font-mono text-sm font-medium text-text-muted hover:border-accent/30 hover:text-accent transition-all duration-150"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+              github/crazygiscool
             </a>
           </div>
         </div>
       </section>
     </main>
 
-    <footer>
-      <p>© {new Date().getFullYear()} Crazygiscool</p>
+    <footer class="border-t border-border py-6 text-center">
+      <p class="font-mono text-xs text-text-dim">
+        © {new Date().getFullYear()} CRAZY G // built with Astro
+      </p>
     </footer>
-    
+
     <script>
-      const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6'];
-      
-      function initBackgroundSelector() {
-        const dropdown = document.getElementById('bgDropdown');
-        const trigger = document.getElementById('bgDropdownTrigger');
-        const menu = document.getElementById('bgDropdownMenu');
-        const items = menu?.querySelectorAll('.bg-dropdown-item');
-        
-        if (!dropdown || !trigger || !menu || !items) return;
-        
-        const bgNames = ['Fireflies', 'Matrix', 'Starfield', 'Waves', 'Minecraft', 'Code', 'Blobs', 'Noise', 'Aurora', 'Falling Blocks'];
-        
-        trigger.addEventListener('click', (e) => {
-          e.stopPropagation();
-          dropdown.classList.toggle('open');
+      // Contribution graph
+      (function initContributionGraph() {
+        const dataEl = document.getElementById("contribData");
+        const monthEl = document.getElementById("monthLabels");
+        const container = document.getElementById("graphContainer");
+        if (!dataEl || !container) return;
+
+        const weeks = JSON.parse(dataEl.textContent || "[]");
+        const months = monthEl ? JSON.parse(monthEl.textContent || "[]") : [];
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "contribution-grid";
+
+        months.forEach((m) => {
+          const label = document.createElement("div");
+          label.className = "font-mono text-[10px] text-text-dim";
+          label.style.cssText = `position: absolute; left: ${m.weekIndex * 13 + 44}px; top: -16px;`;
+          label.textContent = m.month;
+          container.appendChild(label);
         });
-        
-        document.addEventListener('click', (e) => {
-          if (!dropdown.contains(e.target as Node)) {
-            dropdown.classList.remove('open');
-          }
+
+        weeks.forEach((week) => {
+          const col = document.createElement("div");
+          col.className = "contribution-week";
+          week.forEach((day) => {
+            const block = document.createElement("div");
+            block.className = `contribution-day level-${day.level}`;
+            block.title = `${day.date}: ${day.count} contributions`;
+            col.appendChild(block);
+          });
+          wrapper.appendChild(col);
         });
-        
-        function showBackground(index: number) {
-          localStorage.setItem('selectedBackground', String(index));
-          
-          document.querySelectorAll('.bg-layer').forEach((layer, i) => {
-            layer.classList.toggle('active', i === index);
-          });
-          
-          items.forEach((item, i) => {
-            item.classList.toggle('active', i === index);
-          });
-          
-          const mcBackground = document.getElementById('mcBackground');
-          const mcTooltip = document.getElementById('mcTooltip');
-          console.log('showBackground', index, mcBackground);
-          if (mcBackground) {
-            mcBackground.classList.toggle('visible', index === 4);
-          }
-          if (mcTooltip) {
-            mcTooltip.style.display = index === 4 ? 'block' : 'none';
-          }
-          
-          if (index === 4) {
-            setTimeout(initMcBackground, 100);
-          }
-          
-          dropdown.classList.remove('open');
-        }
-        
-        items.forEach((item) => {
-          item.addEventListener('click', () => {
-            const index = parseInt(item.getAttribute('data-bg') || '0');
-            showBackground(index);
+
+        container.appendChild(wrapper);
+      })();
+
+      // WakaTime tabs
+      (function initWakaTabs() {
+        document.querySelectorAll(".waka-tab-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const tabId = btn.getAttribute("data-tab");
+            document
+              .querySelectorAll(".waka-tab-btn")
+              .forEach((b) => {
+                b.className =
+                  "waka-tab-btn rounded-lg border border-border bg-surface px-3.5 py-2 font-mono text-xs font-medium text-text-muted hover:border-accent/30 hover:text-accent";
+              });
+            btn.className =
+              "waka-tab-btn active rounded-lg border border-accent/30 bg-accent/10 px-3.5 py-2 font-mono text-xs font-medium text-accent hover:bg-accent/20";
+            document
+              .querySelectorAll(".waka-tab-content")
+              .forEach((c) => c.classList.remove("active"));
+            document.getElementById(`tab-${tabId}`)?.classList.add("active");
           });
         });
-        
-        window.addEventListener('backgroundChange', ((e: CustomEvent) => {
-          showBackground(e.detail.index);
-        }) as EventListener);
-        
-        const saved = localStorage.getItem('selectedBackground');
-        const initialIndex = saved ? parseInt(saved) : 0;
-        const mcBackground = document.getElementById('mcBackground');
-        const mcTooltip = document.getElementById('mcTooltip');
-        if (mcBackground) {
-          mcBackground.classList.toggle('visible', initialIndex === 4);
-        }
-        if (mcTooltip) {
-          mcTooltip.style.display = initialIndex === 4 ? 'block' : 'none';
-        }
-        showBackground(initialIndex);
-      }
-      
-      function initWakaTabs() {
-        document.querySelectorAll('.waka-tab-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const tabId = btn.getAttribute('data-tab');
-            
-            document.querySelectorAll('.waka-tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.waka-tab-content').forEach(c => c.classList.remove('active'));
-            
-            btn.classList.add('active');
-            document.getElementById(`tab-${tabId}`)?.classList.add('active');
-          });
-        });
-      }
-      
-      function initPieChart() {
-        const pieCenterText = document.getElementById('pieCenterText');
-        const pieCenterTime = document.getElementById('pieCenterTime');
-        const pieCenterPercent = document.getElementById('pieCenterPercent');
-        const pieTooltip = document.getElementById('pieTooltip');
-        const pieChart = document.getElementById('pieChart');
-        const pieContainer = document.getElementById('pieContainer');
-        
+      })();
+
+      // Pie chart interactions
+      (function initPieChart() {
+        const pieCenterText = document.getElementById("pieCenterText");
+        const pieCenterTime = document.getElementById("pieCenterTime");
+        const pieCenterPercent = document.getElementById("pieCenterPercent");
+        const pieTooltip = document.getElementById("pieTooltip");
+        const pieChart = document.getElementById("pieChart");
+        const pieContainer = document.getElementById("pieContainer");
+
         if (!pieChart || !pieCenterText) return;
-        
-        const langDataEl = document.getElementById('langData');
-        const languages = langDataEl ? JSON.parse(langDataEl.textContent || '[]') : [];
-        
+
+        const langDataEl = document.getElementById("langData");
+        const languages = langDataEl ? JSON.parse(langDataEl.textContent || "[]") : [];
+        const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
+
         function updatePieCenter(index) {
           if (index >= 0 && index < languages.length) {
             const lang = languages[index];
             pieCenterText.textContent = lang.name;
             pieCenterTime.textContent = lang.text;
-            pieCenterPercent.textContent = lang.percent.toFixed(1) + '%';
+            pieCenterPercent.textContent = lang.percent.toFixed(1) + "%";
           }
         }
-        
-        pieChart.addEventListener('mousemove', (e) => {
+
+        pieChart.addEventListener("mousemove", (e) => {
           const rect = pieChart.getBoundingClientRect();
           const centerX = rect.left + rect.width / 2;
           const centerY = rect.top + rect.height / 2;
           const x = e.clientX - centerX;
           const y = e.clientY - centerY;
-          
           let angle = Math.atan2(y, x) * (180 / Math.PI) + 90;
           if (angle < 0) angle += 360;
-          
+
           let cumulativePercent = 0;
           let hoveredIndex = -1;
-          
+
           for (let i = 0; i < languages.length && i < 8; i++) {
             const startAngle = cumulativePercent * 3.6;
             cumulativePercent += languages[i].percent;
             const endAngle = cumulativePercent * 3.6;
-            
             if (angle >= startAngle && angle < endAngle) {
               hoveredIndex = i;
               break;
             }
           }
-          
+
           if (hoveredIndex >= 0) {
-            pieTooltip.style.opacity = '1';
+            pieTooltip.style.opacity = "1";
             pieTooltip.style.left = `${e.clientX - pieContainer.getBoundingClientRect().left + 10}px`;
             pieTooltip.style.top = `${e.clientY - pieContainer.getBoundingClientRect().top - 10}px`;
             pieTooltip.innerHTML = `
-              <div class="tooltip-color" style="background: ${colors[hoveredIndex]}"></div>
-              <div class="tooltip-content">
-                <div class="tooltip-name">${languages[hoveredIndex].name}</div>
-                <div class="tooltip-stats">
-                  <span>${languages[hoveredIndex].text}</span>
-                  <span class="tooltip-percent">${languages[hoveredIndex].percent.toFixed(1)}%</span>
+              <div class="flex items-start gap-2">
+                <div class="h-2.5 w-2.5 shrink-0 mt-0.5 rounded-full" style="background: ${colors[hoveredIndex]}"></div>
+                <div>
+                  <div class="font-semibold text-text">${languages[hoveredIndex].name}</div>
+                  <div class="mt-0.5 flex gap-3 text-text-muted">
+                    <span>${languages[hoveredIndex].text}</span>
+                    <span class="text-accent font-semibold">${languages[hoveredIndex].percent.toFixed(1)}%</span>
+                  </div>
                 </div>
               </div>
             `;
             updatePieCenter(hoveredIndex);
-            pieChart.style.transform = 'scale(1.02)';
+            pieChart.style.transform = "scale(1.02)";
           }
         });
-        
-        pieChart.addEventListener('mouseleave', () => {
-          pieTooltip.style.opacity = '0';
-          pieChart.style.transform = 'scale(1)';
+
+        pieChart.addEventListener("mouseleave", () => {
+          pieTooltip.style.opacity = "0";
+          pieChart.style.transform = "scale(1)";
           updatePieCenter(0);
         });
-        
-        document.querySelectorAll('.pie-legend-item').forEach((item, i) => {
-          item.addEventListener('mouseenter', () => {
-            updatePieCenter(i);
-          });
-          item.addEventListener('mouseleave', () => {
-            updatePieCenter(0);
-          });
-        });
-      }
-      
-      document.addEventListener('DOMContentLoaded', () => {
-        initBackgroundSelector();
-        initWakaTabs();
-        initPieChart();
-        initMcBackground();
-        initBackgrounds();
-      });
 
-      function initBackgrounds() {
-        initFireflies();
-        initMatrixRain();
-        initStarfield();
-        initCodeRain();
-        initBlobs();
-        initNoise();
-        initAurora();
-        initFallingBlocks();
-      }
-
-      function initFireflies() {
-        const canvas = document.getElementById('fireflies-canvas') as HTMLCanvasElement;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        
-        const fireflies: any[] = [];
-        const numFireflies = 80;
-        
-        for (let i = 0; i < numFireflies; i++) {
-          fireflies.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            radius: Math.random() * 2 + 1,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: (Math.random() - 0.5) * 0.5,
-            alpha: Math.random(),
-            alphaDir: Math.random() > 0.5 ? 0.02 : -0.02
-          });
-        }
-        
-        function animate() {
-          ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          fireflies.forEach(f => {
-            f.x += f.vx;
-            f.y += f.vy;
-            f.alpha += f.alphaDir;
-            
-            if (f.alpha <= 0 || f.alpha >= 1) f.alphaDir *= -1;
-            if (f.x < 0) f.x = canvas.width;
-            if (f.x > canvas.width) f.x = 0;
-            if (f.y < 0) f.y = canvas.height;
-            if (f.y > canvas.height) f.y = 0;
-            
-            ctx.beginPath();
-            ctx.arc(f.x, f.y, f.radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(168, 85, 247, ${f.alpha})`;
-            ctx.fill();
-          });
-          
-          requestAnimationFrame(animate);
-        }
-        
-        animate();
-        
-        window.addEventListener('resize', () => {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
+        document.querySelectorAll(".pie-legend-item").forEach((item, i) => {
+          item.addEventListener("mouseenter", () => updatePieCenter(i));
+          item.addEventListener("mouseleave", () => updatePieCenter(0));
         });
-      }
-
-      function initMatrixRain() {
-        const canvas = document.getElementById('matrix-canvas') as HTMLCanvasElement;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        
-        const chars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789';
-        const fontSize = 14;
-        const columns = Math.floor(canvas.width / fontSize);
-        const drops: number[] = Array(columns).fill(1);
-        
-        function draw() {
-          ctx.fillStyle = 'rgba(10, 10, 15, 0.05)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          ctx.fillStyle = '#10b981';
-          ctx.font = `${fontSize}px monospace`;
-          
-          for (let i = 0; i < drops.length; i++) {
-            const char = chars[Math.floor(Math.random() * chars.length)];
-            ctx.fillText(char, i * fontSize, drops[i] * fontSize);
-            
-            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-              drops[i] = 0;
-            }
-            drops[i]++;
-          }
-        }
-        
-        setInterval(draw, 50);
-        
-        window.addEventListener('resize', () => {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-        });
-      }
-
-      function initStarfield() {
-        const canvas = document.getElementById('starfield-canvas') as HTMLCanvasElement;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        
-        const stars: any[] = [];
-        const numStars = 200;
-        
-        for (let i = 0; i < numStars; i++) {
-          stars.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            radius: Math.random() * 1.5,
-            speed: Math.random() * 0.5 + 0.1,
-            opacity: Math.random()
-          });
-        }
-        
-        function animate() {
-          ctx.fillStyle = 'rgba(10, 10, 15, 0.2)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          stars.forEach(star => {
-            ctx.beginPath();
-            ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
-            ctx.fill();
-            
-            star.x -= star.speed;
-            if (star.x < 0) {
-              star.x = canvas.width;
-              star.y = Math.random() * canvas.height;
-            }
-          });
-          
-          requestAnimationFrame(animate);
-        }
-        
-        animate();
-        
-        window.addEventListener('resize', () => {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-        });
-      }
-
-      function initCodeRain() {
-        const canvas = document.getElementById('coderain-canvas') as HTMLCanvasElement;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        
-        const codeSnippets = ['{ }', '< >', '( )', '[ ]', '&&', '||', '=>', '++', '--', '==', '!=', '==='];
-        const fontSize = 16;
-        const columns = Math.floor(canvas.width / fontSize);
-        const drops: any[] = Array(columns).fill(0).map(() => ({
-          y: Math.random() * -100,
-          speed: Math.random() * 2 + 1,
-          text: codeSnippets[Math.floor(Math.random() * codeSnippets.length)],
-          opacity: Math.random() * 0.5 + 0.5
-        }));
-        
-        function draw() {
-          ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          ctx.font = `${fontSize}px monospace`;
-          
-          drops.forEach(drop => {
-            const hue = Math.random() > 0.5 ? 270 : 190;
-            ctx.fillStyle = `hsla(${hue}, 80%, 60%, ${drop.opacity})`;
-            ctx.fillText(drop.text, drops.indexOf(drop) * fontSize, drop.y);
-            
-            drop.y += drop.speed;
-            if (drop.y > canvas.height) {
-              drop.y = -20;
-              drop.text = codeSnippets[Math.floor(Math.random() * codeSnippets.length)];
-            }
-          });
-        }
-        
-        setInterval(draw, 50);
-        
-        window.addEventListener('resize', () => {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-        });
-      }
-
-      function initBlobs() {
-        const canvas = document.getElementById('blobs-canvas') as HTMLCanvasElement;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        
-        const blobs: any[] = [];
-        const colors = ['#a855f7', '#ec4899', '#3b82f6', '#10b981'];
-        
-        for (let i = 0; i < 5; i++) {
-          blobs.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            radius: Math.random() * 150 + 100,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: (Math.random() - 0.5) * 0.5,
-            color: colors[i % colors.length],
-            phase: Math.random() * Math.PI * 2
-          });
-        }
-        
-        function animate() {
-          ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          blobs.forEach(blob => {
-            blob.x += blob.vx;
-            blob.y += blob.vy;
-            blob.phase += 0.01;
-            
-            if (blob.x < -blob.radius) blob.x = canvas.width + blob.radius;
-            if (blob.x > canvas.width + blob.radius) blob.x = -blob.radius;
-            if (blob.y < -blob.radius) blob.y = canvas.height + blob.radius;
-            if (blob.y > canvas.height + blob.radius) blob.y = -blob.radius;
-            
-            const gradient = ctx.createRadialGradient(
-              blob.x, blob.y, 0,
-              blob.x, blob.y, blob.radius + Math.sin(blob.phase) * 20
-            );
-            gradient.addColorStop(0, blob.color + '40');
-            gradient.addColorStop(1, blob.color + '00');
-            
-            ctx.beginPath();
-            ctx.arc(blob.x, blob.y, blob.radius + Math.sin(blob.phase) * 20, 0, Math.PI * 2);
-            ctx.fillStyle = gradient;
-            ctx.fill();
-          });
-          
-          requestAnimationFrame(animate);
-        }
-        
-        animate();
-        
-        window.addEventListener('resize', () => {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-        });
-      }
-
-      function initNoise() {
-        const canvas = document.getElementById('noise-canvas') as HTMLCanvasElement;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        
-        const imageData = ctx.createImageData(canvas.width, canvas.height);
-        const data = imageData.data;
-        
-        function generateNoise() {
-          for (let i = 0; i < data.length; i += 4) {
-            const value = Math.random() * 255;
-            data[i] = value;
-            data[i + 1] = value;
-            data[i + 2] = value;
-            data[i + 3] = 20;
-          }
-          ctx.putImageData(imageData, 0, 0);
-        }
-        
-        setInterval(generateNoise, 100);
-        
-        window.addEventListener('resize', () => {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-        });
-      }
-
-      function initAurora() {
-        const canvas = document.getElementById('aurora-canvas') as HTMLCanvasElement;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        
-        const waves: any[] = [];
-        const colors = [
-          { color: '#10b981', speed: 0.02 },
-          { color: '#a855f7', speed: 0.015 },
-          { color: '#3b82f6', speed: 0.025 }
-        ];
-        
-        colors.forEach((c, i) => {
-          waves.push({
-            color: c.color,
-            speed: c.speed,
-            phase: i * 2,
-            amplitude: 50 + i * 20,
-            y: canvas.height * (0.3 + i * 0.15)
-          });
-        });
-        
-        let frame = 0;
-        
-        function animate() {
-          ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          waves.forEach(wave => {
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height);
-            
-            for (let x = 0; x < canvas.width; x++) {
-              const y = wave.y + Math.sin((x * 0.01) + wave.phase + frame * wave.speed) * wave.amplitude;
-              ctx.lineTo(x, y);
-            }
-            
-            ctx.lineTo(canvas.width, canvas.height);
-            ctx.closePath();
-            
-            const gradient = ctx.createLinearGradient(0, wave.y - wave.amplitude, 0, canvas.height);
-            gradient.addColorStop(0, wave.color + '40');
-            gradient.addColorStop(1, wave.color + '00');
-            ctx.fillStyle = gradient;
-            ctx.fill();
-          });
-          
-          frame++;
-          requestAnimationFrame(animate);
-        }
-        
-        animate();
-        
-        window.addEventListener('resize', () => {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-        });
-      }
-
-      function initFallingBlocks() {
-        const canvas = document.getElementById('falling-blocks-canvas') as HTMLCanvasElement;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        
-        const blocks: any[] = [];
-        const colors = ['#4ade80', '#3b82f6', '#fbbf24', '#f87171', '#a855f7'];
-        
-        for (let i = 0; i < 30; i++) {
-          blocks.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            size: Math.random() * 30 + 20,
-            speed: Math.random() * 2 + 1,
-            rotation: Math.random() * Math.PI * 2,
-            rotationSpeed: (Math.random() - 0.5) * 0.05,
-            color: colors[Math.floor(Math.random() * colors.length)],
-            opacity: Math.random() * 0.3 + 0.2
-          });
-        }
-        
-        function animate() {
-          ctx.fillStyle = 'rgba(10, 10, 15, 0.1)';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          blocks.forEach(block => {
-            block.y += block.speed;
-            block.rotation += block.rotationSpeed;
-            
-            if (block.y > canvas.height + block.size) {
-              block.y = -block.size;
-              block.x = Math.random() * canvas.width;
-            }
-            
-            ctx.save();
-            ctx.translate(block.x, block.y);
-            ctx.rotate(block.rotation);
-            ctx.fillStyle = block.color + Math.floor(block.opacity * 255).toString(16).padStart(2, '0');
-            ctx.fillRect(-block.size / 2, -block.size / 2, block.size, block.size);
-            ctx.restore();
-          });
-          
-          requestAnimationFrame(animate);
-        }
-        
-        animate();
-        
-        window.addEventListener('resize', () => {
-          canvas.width = window.innerWidth;
-          canvas.height = window.innerHeight;
-        });
-      }
-      
-      function initMcBackground() {
-        const track = document.getElementById('mcScrollTrack');
-        const tooltip = document.getElementById('mcTooltip');
-        
-        const blockSize = 32;
-        const gap = 3;
-        
-        const textures = {
-          0: 'https://cdn.jsdelivr.net/gh/Faithful-Pack/Default-Java@1.21.5/assets/minecraft/textures/block/cobblestone.png',
-          1: 'https://cdn.jsdelivr.net/gh/Faithful-Pack/Default-Java@1.21.5/assets/minecraft/textures/block/grass_block_top.png',
-          2: 'https://cdn.jsdelivr.net/gh/Faithful-Pack/Default-Java@1.21.5/assets/minecraft/textures/block/emerald_block.png',
-          3: 'https://cdn.jsdelivr.net/gh/Faithful-Pack/Default-Java@1.21.5/assets/minecraft/textures/block/diamond_block.png',
-          4: 'https://cdn.jsdelivr.net/gh/Faithful-Pack/Default-Java@1.21.5/assets/minecraft/textures/block/gold_block.png'
-        };
-        
-        const data = JSON.parse(document.getElementById('contributionData')?.textContent || '[]');
-        const laneWidth = data.length * (blockSize + gap);
-        
-        function createBlocks(targetTooltip) {
-          const fragment = document.createDocumentFragment();
-          
-          for (let x = 0; x < data.length; x++) {
-            for (let y = 0; y < 7; y++) {
-              const day = data[x]?.[y];
-              
-              if (day) {
-                const block = document.createElement('div');
-                block.className = `mc-bg-block level-${day.level}`;
-                block.style.left = `${x * (blockSize + gap)}px`;
-                block.style.top = `${y * (blockSize + gap)}px`;
-                block.dataset.date = day.date;
-                block.dataset.count = day.count;
-                block.dataset.level = day.level;
-                
-                if (day.count > 0) {
-                  const img = document.createElement('img');
-                  img.src = textures[day.level];
-                  img.className = 'mc-texture';
-                  img.alt = '';
-                  img.draggable = false;
-                  block.appendChild(img);
-                }
-                
-                block.addEventListener('mouseenter', (e) => {
-                  const date = new Date(day.date);
-                  const options: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
-                  const icon = day.count > 0 ? textures[day.level] : textures[0];
-                  targetTooltip.innerHTML = `
-                    <div class="mc-tooltip-header">
-                      <img src="${icon}" class="mc-tooltip-icon" />
-                      <div class="mc-tooltip-info">
-                        <span class="mc-tooltip-count">${day.count} contribution${day.count !== 1 ? 's' : ''}</span>
-                        <span class="mc-tooltip-date">${date.toLocaleDateString('en-US', options)}</span>
-                      </div>
-                    </div>
-                  `;
-                  targetTooltip.style.opacity = '1';
-                  targetTooltip.style.left = `${e.clientX + 15}px`;
-                  targetTooltip.style.top = `${e.clientY + 15}px`;
-                });
-                
-                block.addEventListener('mousemove', (e) => {
-                  targetTooltip.style.left = `${e.clientX + 15}px`;
-                  targetTooltip.style.top = `${e.clientY + 15}px`;
-                });
-                
-                block.addEventListener('mouseleave', () => {
-                  targetTooltip.style.opacity = '0';
-                });
-                
-                fragment.appendChild(block);
-              }
-            }
-          }
-          
-          return fragment;
-        }
-        
-        if (track) {
-          track.innerHTML = '';
-          
-          const lane1 = document.createElement('div');
-          lane1.className = 'mc-scroll-lane';
-          lane1.style.left = '0px';
-          lane1.appendChild(createBlocks(tooltip));
-          
-          const lane2 = document.createElement('div');
-          lane2.className = 'mc-scroll-lane';
-          lane2.style.left = `${laneWidth}px`;
-          lane2.appendChild(createBlocks(tooltip));
-          
-          track.appendChild(lane1);
-          track.appendChild(lane2);
-          
-          track.style.setProperty('--track-width', `${laneWidth * 2}px`);
-          track.style.setProperty('--lane-width', `${laneWidth}px`);
-          
-          track.classList.add('mc-scroll-animated');
-        }
-        
-        const graphTrack = document.getElementById('mcGraphTrack');
-        const graphTooltip = document.getElementById('contributionTooltip');
-        if (graphTrack) {
-          graphTrack.innerHTML = '';
-          graphTrack.className = 'mc-scroll-track';
-          graphTrack.style.setProperty('--track-width', `${laneWidth * 2}px`);
-          graphTrack.style.setProperty('--lane-width', `${laneWidth}px`);
-          graphTrack.classList.add('mc-scroll-animated');
-          
-          const lane1 = document.createElement('div');
-          lane1.className = 'mc-scroll-lane';
-          lane1.style.left = '0px';
-          lane1.appendChild(createBlocks(graphTooltip));
-          
-          const lane2 = document.createElement('div');
-          lane2.className = 'mc-scroll-lane';
-          lane2.style.left = `${laneWidth}px`;
-          lane2.appendChild(createBlocks(graphTooltip));
-          
-          graphTrack.appendChild(lane1);
-          graphTrack.appendChild(lane2);
-        }
-      }
+      })();
     </script>
   </body>
 </html>
