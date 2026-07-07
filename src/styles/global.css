@@ -373,7 +373,7 @@ a {
 
 /* Contribution graph tooltip */
 .contrib-tooltip {
-    position: absolute;
+    position: fixed;
     pointer-events: none;
     z-index: 20;
     min-width: 150px;
