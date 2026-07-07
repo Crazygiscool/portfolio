@@ -73,34 +73,8 @@ const colorMap: Record<string, string> = {
 const res = await fetch(
   "https://api.github.com/users/crazygiscool/repos?sort=stars&per_page=100",
 );
-let allRepos: any[] = [];
-try {
-  const json = await res.json();
-  if (Array.isArray(json)) {
-    allRepos = json.filter((r: any) => !r.fork && r.description);
-  }
-} catch {
-  allRepos = [];
-}
-
-const projectCheckResults = await Promise.all(
-  allRepos.map(async (r: any) => {
-    try {
-      const projRes = await fetch(
-        `https://api.github.com/repos/crazygiscool/${r.name}/projects`,
-      );
-      if (!projRes.ok) return null;
-      const projects = await projRes.json();
-      return Array.isArray(projects) && projects.length > 0 ? r : null;
-    } catch {
-      return null;
-    }
-  }),
-);
-
-const reposWithProjects: any[] = projectCheckResults.filter(Boolean);
-
-const repos: Repo[] = reposWithProjects
+const repos: Repo[] = (await res.json())
+  .filter((r: any) => !r.fork && r.description)
   .sort((a: any, b: any) => b.stargazers_count - a.stargazers_count)
   .map((r: any) => ({
     name: r.name,
