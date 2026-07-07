@@ -194,9 +194,9 @@ const skills = [
       <section class="hero">
         <div class="hero-grid">
           <div class="anim-fade-in" style="display:flex;flex-direction:column;gap:20px">
-            <span class="hero-label">Developer &amp; Systems Engineer</span>
+            <span class="hero-label">DEVELOPER &amp; HOBBYIST</span>
             <h1 class="hero-title">
-              CRAZY G<span class="hero-accent">_</span>
+              CRAZYGISCOOL<span class="hero-accent">_</span>
               <span class="hero-cursor cursor-cyan">|</span>
             </h1>
             <div class="hero-pills">
@@ -233,10 +233,11 @@ const skills = [
           </div>
 
           <div class="hero-side anim-slide-in">
-            <div class="contrib-wrapper">
+            <div class="contrib-wrapper" id="contribWrapper">
               <div id="graphContainer" class="contrib-grid">
                 <script id="contribData" type="application/json" set:html={JSON.stringify(weeksData)}></script>
               </div>
+              <div id="contribTooltip" class="contrib-tooltip"></div>
             </div>
           </div>
         </div>
@@ -341,7 +342,6 @@ const skills = [
                 <button class="waka-tab-btn active" data-tab="languages">Languages</button>
                 <button class="waka-tab-btn" data-tab="editors">Editors</button>
                 <button class="waka-tab-btn" data-tab="os">OS</button>
-                <button class="waka-tab-btn" data-tab="categories">Categories</button>
               </div>
 
               <div class="waka-tab-content active" id="tab-languages">
@@ -435,29 +435,6 @@ const skills = [
                 )}
               </div>
 
-              <div class="waka-tab-content" id="tab-categories">
-                {wakaStats.data.categories && wakaStats.data.categories.length > 0 ? (
-                  <div class="blocks-grid">
-                    {wakaStats.data.categories.map((cat, i) => {
-                      const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
-                      return (
-                        <div class="bar-block">
-                          <div class="bar-header">
-                            <span class="bar-name">{cat.name}</span>
-                            <span class="bar-pct">{cat.percent.toFixed(1)}%</span>
-                          </div>
-                          <div class="bar-track">
-                            <div class="bar-fill" style={`width: ${cat.percent}%; background: ${colors[i % colors.length]}`}></div>
-                          </div>
-                          <span class="bar-time">{cat.text}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">No category data</p>
-                )}
-              </div>
             </div>
           </div>
         </section>
@@ -514,31 +491,56 @@ const skills = [
     </main>
 
     <footer class="footer">
-      <p class="footer-text">© {new Date().getFullYear()} CRAZY G // built with Astro</p>
+      <p class="footer-text">© {new Date().getFullYear()} CRAZYGISCOOL // built with Astro</p>
     </footer>
 
     <script>
       // Contribution graph
       (function() {
-        const dataEl = document.getElementById("contribData");
-        const container = document.getElementById("graphContainer");
-        if (!dataEl || !container) return;
-        const weeks = JSON.parse(dataEl.textContent || "[]");
-        const wrapper = document.createDocumentFragment();
+        var dataEl = document.getElementById("contribData");
+        var container = document.getElementById("graphContainer");
+        var tooltip = document.getElementById("contribTooltip");
+        var wrapper = document.getElementById("contribWrapper");
+        if (!dataEl || !container || !tooltip) return;
+        var weeks = JSON.parse(dataEl.textContent || "[]");
+        var frag = document.createDocumentFragment();
 
-        weeks.forEach((week) => {
-          const col = document.createElement("div");
+        weeks.forEach(function(week) {
+          var col = document.createElement("div");
           col.className = "contrib-col";
-          week.forEach((day) => {
-            const block = document.createElement("div");
+          week.forEach(function(day) {
+            var block = document.createElement("div");
             block.className = "contrib-day contrib-l" + day.level;
-            block.title = day.date + ": " + day.count + " contributions";
+            block.dataset.date = day.date;
+            block.dataset.count = day.count;
+
+            block.addEventListener("mouseenter", function(e) {
+              tooltip.style.opacity = "1";
+            });
+
+            block.addEventListener("mousemove", function(e) {
+              var rect = wrapper.getBoundingClientRect();
+              var x = e.clientX - rect.left + 12;
+              var y = e.clientY - rect.top - 10;
+              if (x + 160 > rect.width) x = rect.width - 170;
+              if (y < 0) y = 10;
+              tooltip.style.left = x + "px";
+              tooltip.style.top = y + "px";
+              tooltip.innerHTML =
+                '<div class="contrib-tooltip-date">' + day.date + '</div>' +
+                '<div class="contrib-tooltip-count">' + day.count + ' contribution' + (day.count === 1 ? "" : "s") + '</div>';
+            });
+
+            block.addEventListener("mouseleave", function() {
+              tooltip.style.opacity = "0";
+            });
+
             col.appendChild(block);
           });
-          wrapper.appendChild(col);
+          frag.appendChild(col);
         });
 
-        container.appendChild(wrapper);
+        container.appendChild(frag);
       })();
 
       // WakaTime tabs

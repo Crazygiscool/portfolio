@@ -199,6 +199,7 @@ a {
     font-weight: 800;
     line-height: 1.1;
     letter-spacing: -0.025em;
+    white-space: nowrap;
 }
 
 @media (min-width: 768px) {
@@ -325,7 +326,7 @@ a {
 
 .hero-side {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
 }
 
@@ -346,27 +347,57 @@ a {
 
 .contrib-grid {
     display: flex;
-    gap: 2px;
+    gap: 3px;
     position: relative;
 }
 
 .contrib-col {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
 }
 
 .contrib-day {
-    width: 11px;
-    height: 11px;
-    border-radius: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
     cursor: pointer;
     transition: transform 0.15s ease;
+    position: relative;
 }
 
 .contrib-day:hover {
     z-index: 10;
-    transform: scale(1.4);
+    transform: scale(1.5);
+}
+
+/* Contribution graph tooltip */
+.contrib-tooltip {
+    position: absolute;
+    pointer-events: none;
+    z-index: 20;
+    min-width: 150px;
+    padding: 10px 14px;
+    border: 1px solid rgba(124, 58, 237, 0.5);
+    border-radius: 8px;
+    background: rgba(11, 12, 16, 0.95);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.contrib-tooltip-date {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.contrib-tooltip-count {
+    color: var(--accent-cyan);
+    font-weight: 700;
+    margin-top: 2px;
 }
 
 .contrib-l0 { background: rgba(255, 255, 255, 0.04); }
@@ -1126,7 +1157,13 @@ a {
 
 @media (max-width: 768px) {
     .contrib-day {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
+    }
+    .contrib-grid {
+        gap: 2px;
+    }
+    .contrib-col {
+        gap: 2px;
     }
 }
