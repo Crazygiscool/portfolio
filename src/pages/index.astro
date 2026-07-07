@@ -10,12 +10,6 @@ interface Repo {
   color: string;
 }
 
-interface ContributionDay {
-  date: string;
-  count: number;
-  level: number;
-}
-
 interface WakaStatItem {
   name: string;
   total_seconds: number;
@@ -32,7 +26,6 @@ interface WakaStatsData {
   human_readable_daily_average: string;
   human_readable_total_including_other_language: string;
   total_seconds: number;
-  total_seconds_including_other_language: number;
   daily_average: number;
   days_minus_holidays: number;
   best_day: { date: string; text: string; total_seconds: number } | null;
@@ -101,14 +94,12 @@ const contributions = contributionsRes.ok
   : { contributions: [], totalContributions: 0 };
 
 const rawContributions = contributions.contributions || [];
-
 const totalContributions = rawContributions.reduce(
-  (sum: number, d: any) => sum + (d.count || 0),
-  0,
+  (sum: number, d: any) => sum + (d.count || 0), 0,
 );
 
-const weeksData: ContributionDay[][] = [];
-let currentWeek: ContributionDay[] = [];
+const weeksData: { date: string; count: number; level: number }[][] = [];
+let curWeek: { date: string; count: number; level: number }[] = [];
 
 rawContributions.forEach((day: any) => {
   const count = day.count || 0;
@@ -119,30 +110,13 @@ rawContributions.forEach((day: any) => {
     else if (count <= 10) level = 3;
     else level = 4;
   }
-  currentWeek.push({ date: day.date, count, level });
-  if (currentWeek.length === 7) {
-    weeksData.push(currentWeek);
-    currentWeek = [];
+  curWeek.push({ date: day.date, count, level });
+  if (curWeek.length === 7) {
+    weeksData.push(curWeek);
+    curWeek = [];
   }
 });
-if (currentWeek.length > 0) weeksData.push(currentWeek);
-
-const monthNames = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-const monthLabels: { month: string; weekIndex: number }[] = [];
-let lastMonth = -1;
-weeksData.forEach((week, i) => {
-  const firstDay = week.find((d) => d !== null);
-  if (firstDay?.date) {
-    const month = new Date(firstDay.date).getMonth();
-    if (month !== lastMonth) {
-      monthLabels.push({ month: monthNames[month], weekIndex: i });
-      lastMonth = month;
-    }
-  }
-});
+if (curWeek.length > 0) weeksData.push(curWeek);
 
 const wakaKey = import.meta.env.WAKATIME_API_KEY;
 let wakaStats: { data: WakaStatsData } | null = null;
@@ -188,7 +162,7 @@ const skills = [
 ---
 
 <!doctype html>
-<html lang="en" class="bg-bg text-text antialiased">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="description" content="Crazygiscool — Developer & Systems Engineer" />
@@ -202,79 +176,66 @@ const skills = [
     />
     <title>Crazygiscool — Developer & Systems Engineer</title>
   </head>
-  <body class="min-h-screen bg-bg text-text">
-    <nav class="fixed top-0 left-0 right-0 z-50 h-14 border-b border-border bg-bg/80 backdrop-blur-md">
-      <div class="mx-auto flex h-full max-w-6xl items-center justify-between px-6">
-        <a href="#" class="font-mono text-sm font-bold tracking-tight text-accent hover:text-accent-hover transition-colors">
-          $ whoami
-        </a>
-        <div class="nav-links flex items-center gap-6 font-mono text-xs text-text-muted">
-          <a href="#tech" class="hover:text-accent transition-colors">// tech</a>
-          <a href="#projects" class="hover:text-accent transition-colors">// projects</a>
-          <a href="#stats" class="hover:text-accent transition-colors">// stats</a>
-          <a href="#contact" class="hover:text-accent transition-colors">// contact</a>
+  <body>
+    <nav class="nav">
+      <div class="nav-inner">
+        <a href="#" class="nav-logo">$ whoami</a>
+        <div class="nav-links">
+          <a href="#tech" class="nav-link">// tech</a>
+          <a href="#projects" class="nav-link">// projects</a>
+          <a href="#stats" class="nav-link">// stats</a>
+          <a href="#contact" class="nav-link">// contact</a>
         </div>
       </div>
     </nav>
 
-    <main class="pt-14">
+    <main class="main">
       <!-- HERO -->
-      <section class="relative mx-auto max-w-6xl px-6 pt-24 pb-20 md:pt-32 md:pb-28">
-        <div class="hero-grid grid gap-12 md:grid-cols-[1.3fr_1fr]">
-          <div class="animate-fade-in flex flex-col gap-5">
-            <span class="font-mono text-xs font-medium tracking-[0.2em] text-accent uppercase">
-              Developer & Systems Engineer
-            </span>
-            <h1 class="font-mono text-4xl font-extrabold leading-tight tracking-tight md:text-5xl lg:text-6xl">
-              CRAZY G<span class="text-accent">_</span>
-              <span class="animate-blink text-accent-cyan">|</span>
+      <section class="hero">
+        <div class="hero-grid">
+          <div class="anim-fade-in" style="display:flex;flex-direction:column;gap:20px">
+            <span class="hero-label">Developer &amp; Systems Engineer</span>
+            <h1 class="hero-title">
+              CRAZY G<span class="hero-accent">_</span>
+              <span class="hero-cursor cursor-cyan">|</span>
             </h1>
-            <div class="flex flex-wrap gap-2">
-              <span class="inline-block rounded border border-border bg-surface px-3 py-1 font-mono text-xs text-text-muted">
-                $ cat /etc/bio
-              </span>
-              <span class="inline-block rounded border border-border bg-surface px-3 py-1 font-mono text-xs text-accent-green">
-                > Developer passionate about Minecraft plugins, Godot games & systems tooling
-              </span>
+            <div class="hero-pills">
+              <span class="pill">$ cat /etc/bio</span>
+              <span class="pill pill-green">&gt; Developer passionate about Minecraft plugins, Godot games &amp; systems tooling</span>
             </div>
-            <div class="flex items-center gap-4 font-mono text-sm">
-              <div class="flex items-baseline gap-1.5">
-                <span class="text-2xl font-bold text-text">{totalContributions}</span>
-                <span class="text-xs text-text-muted">contributions / yr</span>
+            <div class="hero-stats">
+              <div class="hero-stat">
+                <span class="hero-stat-value">{totalContributions}</span>
+                <span class="hero-stat-label">contributions / yr</span>
               </div>
-              <div class="flex items-baseline gap-1.5">
-                <span class="text-2xl font-bold text-text">{repos.length}</span>
-                <span class="text-xs text-text-muted">projects</span>
+              <div class="hero-stat">
+                <span class="hero-stat-value">{repos.length}</span>
+                <span class="hero-stat-label">projects</span>
               </div>
             </div>
-            <div class="flex items-center gap-3">
-              <a href="https://github.com/crazygiscool" target="_blank" rel="noopener noreferrer" class="group inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 font-mono text-xs text-text-muted hover:border-accent hover:text-accent transition-all duration-150">
-                <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            <div class="hero-links">
+              <a href="https://github.com/crazygiscool" target="_blank" rel="noopener noreferrer" class="hero-link">
+                <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                 <span>github</span>
-                <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                <span class="link-arrow">→</span>
               </a>
-              <a href="https://youtube.com/@crazygiscool" target="_blank" rel="noopener noreferrer" class="group inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 font-mono text-xs text-text-muted hover:border-accent-pink hover:text-accent-pink transition-all duration-150">
-                <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              <a href="https://youtube.com/@crazygiscool" target="_blank" rel="noopener noreferrer" class="hero-link hero-link-pink">
+                <svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                 <span>youtube</span>
-                <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                <span class="link-arrow">→</span>
               </a>
-              <a href="mailto:crazygiscool@proton.me" class="group inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 font-mono text-xs text-text-muted hover:border-accent-cyan hover:text-accent-cyan transition-all duration-150">
-                <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+              <a href="mailto:crazygiscool@proton.me" class="hero-link hero-link-cyan">
+                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
                 <span>email</span>
-                <span class="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                <span class="link-arrow">→</span>
               </a>
             </div>
           </div>
 
-          <div class="animate-slide-in flex items-start justify-center md:justify-end">
-            <div
-              id="contributionGraph"
-              class="contribution-scroll w-full overflow-x-auto pb-2"
-              style="mask-image: linear-gradient(to left, black 80%, transparent 100%); -webkit-mask-image: linear-gradient(to left, black 80%, transparent 100%);"
-            >
-              <div id="graphContainer" class="contribution-grid">
+          <div class="hero-side anim-slide-in">
+            <div class="contrib-wrapper">
+              <div id="graphContainer" class="contrib-grid">
                 <script id="contribData" type="application/json" set:html={JSON.stringify(weeksData)}></script>
-                <script id="monthLabels" type="application/json" set:html={JSON.stringify(monthLabels)}></script>
               </div>
             </div>
           </div>
@@ -282,27 +243,20 @@ const skills = [
       </section>
 
       <!-- TECH STACK -->
-      <section id="tech" class="border-t border-border py-20">
-        <div class="mx-auto max-w-6xl px-6">
-          <div class="mb-10 flex items-center gap-3">
-            <span class="font-mono text-xs text-accent">01</span>
-            <h2 class="font-mono text-sm font-bold tracking-wider uppercase text-text-muted">Tech Stack</h2>
-            <div class="h-px flex-1 bg-border"></div>
+      <section id="tech" class="section">
+        <div class="section-inner">
+          <div class="section-header">
+            <span class="section-number">01</span>
+            <h2 class="section-title">Tech Stack</h2>
+            <div class="section-line"></div>
           </div>
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+          <div class="tech-grid">
             {skills.map((skill) => (
-              <div
-                class="group flex items-center gap-3 rounded-xl border border-border bg-surface p-4 hover:border-[var(--skill-color)]/50 transition-all duration-200"
-                style={`--skill-color: ${skill.color}`}
-              >
-                <div
-                  class="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={`background: ${skill.color}`}
-                ></div>
-                <div class="flex flex-1 items-center justify-between">
-                  <span class="font-mono text-sm font-medium text-text">{skill.name}</span>
-                  <span class="font-mono text-xs text-text-dim">{skill.level}%</span>
-                </div>
+              <div class="tech-card" style={`border-color: ${skill.color}33`}
+                onmouseover="this.style.borderColor='{skill.color}'" onmouseout="this.style.borderColor=''">
+                <div class="tech-dot" style={`background: ${skill.color}`}></div>
+                <span class="tech-name">{skill.name}</span>
+                <span class="tech-level">{skill.level}%</span>
               </div>
             ))}
           </div>
@@ -310,45 +264,27 @@ const skills = [
       </section>
 
       <!-- PROJECTS -->
-      <section id="projects" class="border-t border-border py-20">
-        <div class="mx-auto max-w-6xl px-6">
-          <div class="mb-10 flex items-center gap-3">
-            <span class="font-mono text-xs text-accent">02</span>
-            <h2 class="font-mono text-sm font-bold tracking-wider uppercase text-text-muted">Projects</h2>
-            <div class="h-px flex-1 bg-border"></div>
+      <section id="projects" class="section">
+        <div class="section-inner">
+          <div class="section-header">
+            <span class="section-number">02</span>
+            <h2 class="section-title">Projects</h2>
+            <div class="section-line"></div>
           </div>
-          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="projects-grid">
             {repos.map((project) => (
-              <a
-                href={project.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="group flex flex-col rounded-xl border border-border bg-surface p-5 hover:border-accent/40 hover:-translate-y-0.5 transition-all duration-200"
-              >
-                <div class="mb-3 flex items-center gap-2.5">
-                  <span
-                    class="h-2.5 w-2.5 shrink-0 rounded-full"
-                    style={`background: ${project.color}`}
-                  ></span>
-                  <span class="flex-1 truncate font-mono text-sm font-semibold text-text group-hover:text-accent transition-colors">
-                    {project.name}
-                  </span>
+              <a href={project.url} target="_blank" rel="noopener noreferrer" class="project-card">
+                <div class="project-header">
+                  <span class="project-dot" style={`background: ${project.color}`}></span>
+                  <span class="project-name">{project.name}</span>
                   {project.stars > 0 && (
-                    <span class="font-mono text-xs text-text-dim">&starf; {project.stars}</span>
+                    <span class="project-stars">&starf; {project.stars}</span>
                   )}
                 </div>
-                <p class="mb-4 flex-1 text-sm leading-relaxed text-text-muted">
-                  {project.description}
-                </p>
-                <div class="mt-auto flex items-center justify-between">
-                  <span
-                    class="inline-block rounded-full border border-border px-2.5 py-0.5 font-mono text-[11px] text-text-muted"
-                  >
-                    {project.language}
-                  </span>
-                  <span class="font-mono text-xs text-text-dim opacity-0 group-hover:opacity-100 transition-opacity">
-                    View Source →
-                  </span>
+                <p class="project-desc">{project.description}</p>
+                <div class="project-footer">
+                  <span class="project-lang">{project.language}</span>
+                  <span class="project-source">View Source →</span>
                 </div>
               </a>
             ))}
@@ -358,179 +294,169 @@ const skills = [
 
       <!-- WAKATIME SYSTEM STATS -->
       {wakaStats && wakaStats.data && (
-        <section id="stats" class="border-t border-border py-20">
-          <div class="mx-auto max-w-6xl px-6">
-            <div class="mb-10 flex items-center gap-3">
-              <span class="font-mono text-xs text-accent">03</span>
-              <h2 class="font-mono text-sm font-bold tracking-wider uppercase text-text-muted">System Stats</h2>
-              <div class="h-px flex-1 bg-border"></div>
+        <section id="stats" class="section">
+          <div class="section-inner">
+            <div class="section-header">
+              <span class="section-number">03</span>
+              <h2 class="section-title">System Stats</h2>
+              <div class="section-line"></div>
             </div>
 
-            <!-- Terminal-style summary -->
-            <div class="mb-8 overflow-hidden rounded-xl border border-border bg-surface font-mono text-sm">
-              <div class="flex items-center gap-2 border-b border-border bg-bg-alt px-4 py-2.5">
-                <span class="h-3 w-3 rounded-full bg-danger/70"></span>
-                <span class="h-3 w-3 rounded-full bg-yellow-500/70"></span>
-                <span class="h-3 w-3 rounded-full bg-accent-green/70"></span>
-                <span class="ml-2 text-xs text-text-dim">wakatime@stats -- {wakaStats.data.human_readable_range}</span>
+            <div class="terminal">
+              <div class="terminal-header">
+                <span class="terminal-dot terminal-dot-red"></span>
+                <span class="terminal-dot terminal-dot-yellow"></span>
+                <span class="terminal-dot terminal-dot-green"></span>
+                <span class="terminal-title">wakatime@stats -- {wakaStats.data.human_readable_range}</span>
               </div>
-              <div class="space-y-1.5 p-4 text-xs leading-relaxed text-text-muted">
-                <div class="flex gap-2">
-                  <span class="text-accent-green">$</span>
+              <div class="terminal-body">
+                <div class="terminal-line">
+                  <span class="terminal-prompt">$</span>
                   <span>cat /proc/coding_activity</span>
                 </div>
-                <div class="flex flex-wrap gap-x-6 gap-y-2 pl-4 text-text">
-                  <span>Total: <span class="font-bold text-accent">{wakaStats.data.human_readable_total}</span></span>
-                  <span>Daily: <span class="font-bold text-accent-cyan">{wakaStats.data.human_readable_daily_average}</span></span>
-                  <span>Active: <span class="font-bold text-accent-green">{wakaStats.data.days_minus_holidays}d</span></span>
-                  <span>Best: <span class="font-bold text-accent-pink">{wakaStats.data.best_day?.text || '-'}</span></span>
+                <div class="terminal-output">
+                  <span>Total: <span class="terminal-stat-value-accent">{wakaStats.data.human_readable_total}</span></span>
+                  <span>Daily: <span class="terminal-stat-value-cyan">{wakaStats.data.human_readable_daily_average}</span></span>
+                  <span>Active: <span class="terminal-stat-value-green">{wakaStats.data.days_minus_holidays}d</span></span>
+                  <span>Best: <span class="terminal-stat-value-pink">{wakaStats.data.best_day?.text || '-'}</span></span>
                 </div>
                 {wakaAllTimeStats?.data && (
-                  <div class="flex gap-2 pt-0.5">
-                    <span class="text-accent-green">$</span>
-                    <span>cat /proc/all_time_coding</span>
-                  </div>
-                )}
-                {wakaAllTimeStats?.data && (
-                  <div class="flex flex-wrap gap-x-6 gap-y-2 pl-4 text-text">
-                    <span>All time: <span class="font-bold text-accent">{wakaAllTimeStats.data.text}</span></span>
-                    <span>Daily avg: <span class="font-bold text-accent-cyan">{Math.round((wakaAllTimeStats.data.daily_average || 0) / 3600 * 10) / 10}h</span></span>
-                    <span>Since: <span class="font-bold text-text-muted">{wakaAllTimeStats.data.range.start_date}</span></span>
-                  </div>
+                  <>
+                    <div class="terminal-line" style="margin-top:2px">
+                      <span class="terminal-prompt">$</span>
+                      <span>cat /proc/all_time_coding</span>
+                    </div>
+                    <div class="terminal-output">
+                      <span>All time: <span class="terminal-stat-value-accent">{wakaAllTimeStats.data.text}</span></span>
+                      <span>Daily avg: <span class="terminal-stat-value-cyan">{Math.round((wakaAllTimeStats.data.daily_average || 0) / 3600 * 10) / 10}h</span></span>
+                      <span>Since: <span class="terminal-stat-value-pink">{wakaAllTimeStats.data.range.start_date}</span></span>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
 
-            <!-- Tabs -->
             <div class="waka-tabs">
-              <div class="mb-5 flex flex-wrap gap-2">
-                <button class="waka-tab-btn active rounded-lg border border-accent/30 bg-accent/10 px-3.5 py-2 font-mono text-xs font-medium text-accent hover:bg-accent/20" data-tab="languages">Languages</button>
-                <button class="waka-tab-btn rounded-lg border border-border bg-surface px-3.5 py-2 font-mono text-xs font-medium text-text-muted hover:border-accent/30 hover:text-accent" data-tab="editors">Editors</button>
-                <button class="waka-tab-btn rounded-lg border border-border bg-surface px-3.5 py-2 font-mono text-xs font-medium text-text-muted hover:border-accent/30 hover:text-accent" data-tab="os">OS</button>
-                <button class="waka-tab-btn rounded-lg border border-border bg-surface px-3.5 py-2 font-mono text-xs font-medium text-text-muted hover:border-accent/30 hover:text-accent" data-tab="categories">Categories</button>
+              <div class="waka-tab-bar">
+                <button class="waka-tab-btn active" data-tab="languages">Languages</button>
+                <button class="waka-tab-btn" data-tab="editors">Editors</button>
+                <button class="waka-tab-btn" data-tab="os">OS</button>
+                <button class="waka-tab-btn" data-tab="categories">Categories</button>
               </div>
 
               <div class="waka-tab-content active" id="tab-languages">
-                <div class="rounded-xl border border-border bg-surface p-6">
+                <div class="pie-section">
                   <script id="langData" type="application/json" set:html={JSON.stringify(wakaStats.data.languages.slice(0, 8))}></script>
-                  <div class="flex flex-col items-center gap-8 md:flex-row md:items-start">
-                    <div class="relative flex items-center justify-center" id="pieContainer">
-                      <div
-                        id="pieChart"
-                        class="h-60 w-60 rounded-full shadow-lg shadow-accent/10 cursor-pointer transition-transform duration-200 hover:scale-[1.02]"
-                        style={(() => {
-                          const topLangs = wakaStats.data.languages.slice(0, 8);
-                          const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
-                          let gradient = "";
-                          let currentDeg = 0;
-                          topLangs.forEach((lang, i) => {
-                            const deg = (lang.percent / 100) * 360;
-                            gradient += `${colors[i % colors.length]} ${currentDeg}deg ${currentDeg + deg}deg, `;
-                            currentDeg += deg;
-                          });
-                          return `background: conic-gradient(${gradient.slice(0, -2)});`;
-                        })()}
-                      >
-                        <div class="absolute inset-8 flex flex-col items-center justify-center rounded-full bg-bg text-center">
-                          <span class="font-mono text-sm font-bold text-text" id="pieCenterText">{wakaStats.data.languages[0]?.name || '-'}</span>
-                          <span class="font-mono text-xs text-text-muted" id="pieCenterTime">{wakaStats.data.languages[0]?.text || '-'}</span>
-                          <span class="font-mono text-sm font-semibold text-accent" id="pieCenterPercent">{wakaStats.data.languages[0]?.percent.toFixed(1) || '0'}%</span>
-                        </div>
-                      </div>
-                      <div id="pieTooltip" class="pointer-events-none absolute z-10 min-w-[160px] rounded-lg border border-accent/50 bg-bg/95 p-3 text-xs opacity-0 shadow-xl backdrop-blur-sm transition-opacity duration-150" style="box-shadow: 0 4px 20px rgba(0,0,0,0.5);"></div>
-                    </div>
-                    <div class="flex flex-wrap justify-center gap-2 md:flex-1 md:justify-start md:self-center">
-                      {wakaStats.data.languages.slice(0, 8).map((lang, i) => {
+                  <div class="pie-wrapper" id="pieContainer">
+                    <div
+                      id="pieChart"
+                      class="pie-chart"
+                      style={(() => {
+                        const topLangs = wakaStats.data.languages.slice(0, 8);
                         const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
-                        return (
-                          <div class="pie-legend-item flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 text-xs transition-colors hover:bg-accent/10" data-index={i}>
-                            <span class="h-2.5 w-2.5 shrink-0 rounded-full" style={`background: ${colors[i % colors.length]}`}></span>
-                            <span class="font-mono text-text-muted">{lang.name}</span>
-                            <span class="font-mono text-text-dim">{lang.percent.toFixed(1)}%</span>
-                          </div>
-                        );
-                      })}
+                        let gradient = "";
+                        let currentDeg = 0;
+                        topLangs.forEach((lang, i) => {
+                          const deg = (lang.percent / 100) * 360;
+                          gradient += `${colors[i % colors.length]} ${currentDeg}deg ${currentDeg + deg}deg, `;
+                          currentDeg += deg;
+                        });
+                        return `background: conic-gradient(${gradient.slice(0, -2)});`;
+                      })()}
+                    >
+                      <div class="pie-center">
+                        <span class="pie-center-name" id="pieCenterText">{wakaStats.data.languages[0]?.name || '-'}</span>
+                        <span class="pie-center-time" id="pieCenterTime">{wakaStats.data.languages[0]?.text || '-'}</span>
+                        <span class="pie-center-pct" id="pieCenterPercent">{wakaStats.data.languages[0]?.percent.toFixed(1) || '0'}%</span>
+                      </div>
                     </div>
+                    <div id="pieTooltip" class="pie-tooltip"></div>
+                  </div>
+                  <div class="pie-legend">
+                    {wakaStats.data.languages.slice(0, 8).map((lang, i) => {
+                      const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
+                      return (
+                        <div class="pie-legend-item" data-index={i}>
+                          <span class="pie-legend-dot" style={`background: ${colors[i % colors.length]}`}></span>
+                          <span class="pie-legend-name">{lang.name}</span>
+                          <span class="pie-legend-pct">{lang.percent.toFixed(1)}%</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
               <div class="waka-tab-content" id="tab-editors">
-                <div class="rounded-xl border border-border bg-surface p-6">
-                  {wakaStats.data.editors && wakaStats.data.editors.length > 0 ? (
-                    <div class="grid gap-4 sm:grid-cols-2">
-                      {wakaStats.data.editors.map((editor, i) => {
-                        const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
-                        return (
-                          <div class="waka-block rounded-lg border border-border bg-surface-alt p-4">
-                            <div class="mb-2 flex items-center justify-between">
-                              <span class="font-mono text-sm font-medium text-text">{editor.name}</span>
-                              <span class="font-mono text-xs text-text-muted">{editor.percent.toFixed(1)}%</span>
-                            </div>
-                            <div class="mb-2 h-1.5 overflow-hidden rounded-full bg-border">
-                              <div class="h-full rounded-full transition-all" style={`width: ${editor.percent}%; background: ${colors[i % colors.length]}`}></div>
-                            </div>
-                            <span class="font-mono text-xs text-text-dim">{editor.text}</span>
+                {wakaStats.data.editors && wakaStats.data.editors.length > 0 ? (
+                  <div class="blocks-grid">
+                    {wakaStats.data.editors.map((editor, i) => {
+                      const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
+                      return (
+                        <div class="bar-block">
+                          <div class="bar-header">
+                            <span class="bar-name">{editor.name}</span>
+                            <span class="bar-pct">{editor.percent.toFixed(1)}%</span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p class="font-mono text-xs text-text-muted">No editor data</p>
-                  )}
-                </div>
+                          <div class="bar-track">
+                            <div class="bar-fill" style={`width: ${editor.percent}%; background: ${colors[i % colors.length]}`}></div>
+                          </div>
+                          <span class="bar-time">{editor.text}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">No editor data</p>
+                )}
               </div>
 
               <div class="waka-tab-content" id="tab-os">
-                <div class="rounded-xl border border-border bg-surface p-6">
-                  {wakaStats.data.operating_systems && wakaStats.data.operating_systems.length > 0 ? (
-                    <div class="grid gap-4 sm:grid-cols-2">
-                      {wakaStats.data.operating_systems.map((os, i) => {
-                        const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
-                        return (
-                          <div class="waka-block rounded-lg border border-border bg-surface-alt p-4">
-                            <div class="mb-2 flex items-center justify-between">
-                              <span class="font-mono text-sm font-medium text-text">{os.name}</span>
-                              <span class="font-mono text-xs text-text-muted">{os.percent.toFixed(1)}%</span>
-                            </div>
-                            <div class="mb-2 h-1.5 overflow-hidden rounded-full bg-border">
-                              <div class="h-full rounded-full transition-all" style={`width: ${os.percent}%; background: ${colors[i % colors.length]}`}></div>
-                            </div>
-                            <span class="font-mono text-xs text-text-dim">{os.text}</span>
+                {wakaStats.data.operating_systems && wakaStats.data.operating_systems.length > 0 ? (
+                  <div class="blocks-grid">
+                    {wakaStats.data.operating_systems.map((os, i) => {
+                      const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
+                      return (
+                        <div class="bar-block">
+                          <div class="bar-header">
+                            <span class="bar-name">{os.name}</span>
+                            <span class="bar-pct">{os.percent.toFixed(1)}%</span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p class="font-mono text-xs text-text-muted">No OS data</p>
-                  )}
-                </div>
+                          <div class="bar-track">
+                            <div class="bar-fill" style={`width: ${os.percent}%; background: ${colors[i % colors.length]}`}></div>
+                          </div>
+                          <span class="bar-time">{os.text}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">No OS data</p>
+                )}
               </div>
 
               <div class="waka-tab-content" id="tab-categories">
-                <div class="rounded-xl border border-border bg-surface p-6">
-                  {wakaStats.data.categories && wakaStats.data.categories.length > 0 ? (
-                    <div class="grid gap-4 sm:grid-cols-2">
-                      {wakaStats.data.categories.map((cat, i) => {
-                        const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
-                        return (
-                          <div class="waka-block rounded-lg border border-border bg-surface-alt p-4">
-                            <div class="mb-2 flex items-center justify-between">
-                              <span class="font-mono text-sm font-medium text-text">{cat.name}</span>
-                              <span class="font-mono text-xs text-text-muted">{cat.percent.toFixed(1)}%</span>
-                            </div>
-                            <div class="mb-2 h-1.5 overflow-hidden rounded-full bg-border">
-                              <div class="h-full rounded-full transition-all" style={`width: ${cat.percent}%; background: ${colors[i % colors.length]}`}></div>
-                            </div>
-                            <span class="font-mono text-xs text-text-dim">{cat.text}</span>
+                {wakaStats.data.categories && wakaStats.data.categories.length > 0 ? (
+                  <div class="blocks-grid">
+                    {wakaStats.data.categories.map((cat, i) => {
+                      const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
+                      return (
+                        <div class="bar-block">
+                          <div class="bar-header">
+                            <span class="bar-name">{cat.name}</span>
+                            <span class="bar-pct">{cat.percent.toFixed(1)}%</span>
                           </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p class="font-mono text-xs text-text-muted">No category data</p>
-                  )}
-                </div>
+                          <div class="bar-track">
+                            <div class="bar-fill" style={`width: ${cat.percent}%; background: ${colors[i % colors.length]}`}></div>
+                          </div>
+                          <span class="bar-time">{cat.text}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">No category data</p>
+                )}
               </div>
             </div>
           </div>
@@ -538,69 +464,48 @@ const skills = [
       )}
 
       <!-- STARRED REPOS -->
-      <section class="border-t border-border py-20">
-        <div class="mx-auto max-w-6xl px-6">
-          <div class="mb-10 flex items-center gap-3">
-            <span class="font-mono text-xs text-accent">04</span>
-            <h2 class="font-mono text-sm font-bold tracking-wider uppercase text-text-muted">Starred Repos</h2>
-            <div class="h-px flex-1 bg-border"></div>
+      <section class="section">
+        <div class="section-inner">
+          <div class="section-header">
+            <span class="section-number">04</span>
+            <h2 class="section-title">Starred Repos</h2>
+            <div class="section-line"></div>
           </div>
           {starredRepos.length > 0 ? (
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="starred-grid">
               {starredRepos.map((repo) => (
-                <a
-                  href={repo.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="group flex flex-col rounded-xl border border-border bg-surface p-4 hover:border-accent/40 hover:-translate-y-0.5 transition-all duration-200"
-                >
-                  <div class="mb-2 flex items-center gap-2">
-                    <span class="flex-1 truncate font-mono text-sm font-medium text-text group-hover:text-accent transition-colors">
-                      {repo.name}
-                    </span>
-                    <span class="shrink-0 font-mono text-xs text-text-dim">&starf; {repo.stars}</span>
+                <a href={repo.url} target="_blank" rel="noopener noreferrer" class="starred-card">
+                  <div class="starred-header">
+                    <span class="starred-name">{repo.name}</span>
+                    <span class="starred-stars">&starf; {repo.stars}</span>
                   </div>
-                  <p class="mb-3 flex-1 text-xs leading-relaxed text-text-muted">
-                    {repo.description || 'No description'}
-                  </p>
-                  <span class="inline-block self-start rounded-full border border-border px-2 py-0.5 font-mono text-[11px] text-text-muted">
-                    {repo.language || 'Code'}
-                  </span>
+                  <p class="starred-desc">{repo.description || 'No description'}</p>
+                  <span class="starred-lang">{repo.language || 'Code'}</span>
                 </a>
               ))}
             </div>
           ) : (
-            <p class="font-mono text-xs text-text-muted">No starred repositories</p>
+            <p style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">No starred repositories</p>
           )}
         </div>
       </section>
 
       <!-- CONTACT -->
-      <section id="contact" class="border-t border-border py-20">
-        <div class="mx-auto max-w-6xl px-6 text-center">
-          <div class="mb-8 flex items-center justify-center gap-3">
-            <span class="font-mono text-xs text-accent">05</span>
-            <h2 class="font-mono text-sm font-bold tracking-wider uppercase text-text-muted">Contact</h2>
-            <div class="h-px w-12 bg-border"></div>
+      <section id="contact" class="contact-section">
+        <div class="contact-inner">
+          <div class="contact-header">
+            <span class="section-number">05</span>
+            <h2 class="section-title">Contact</h2>
+            <div class="contact-line"></div>
           </div>
-          <p class="mb-6 font-mono text-sm text-text-muted">
-            $ echo "Let's build something."
-          </p>
-          <div class="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <a
-              href="mailto:crazygiscool@proton.me"
-              class="inline-flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-5 py-3 font-mono text-sm font-medium text-accent hover:bg-accent/20 transition-all duration-150"
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          <p class="contact-tagline">$ echo "Let's build something."</p>
+          <div class="contact-actions">
+            <a href="mailto:crazygiscool@proton.me" class="contact-btn contact-btn-primary">
+              <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
               crazygiscool@proton.me
             </a>
-            <a
-              href="https://github.com/crazygiscool"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-5 py-3 font-mono text-sm font-medium text-text-muted hover:border-accent/30 hover:text-accent transition-all duration-150"
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            <a href="https://github.com/crazygiscool" target="_blank" rel="noopener noreferrer" class="contact-btn contact-btn-secondary">
+              <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
               github/crazygiscool
             </a>
           </div>
@@ -608,41 +513,26 @@ const skills = [
       </section>
     </main>
 
-    <footer class="border-t border-border py-6 text-center">
-      <p class="font-mono text-xs text-text-dim">
-        © {new Date().getFullYear()} CRAZY G // built with Astro
-      </p>
+    <footer class="footer">
+      <p class="footer-text">© {new Date().getFullYear()} CRAZY G // built with Astro</p>
     </footer>
 
     <script>
       // Contribution graph
-      (function initContributionGraph() {
+      (function() {
         const dataEl = document.getElementById("contribData");
-        const monthEl = document.getElementById("monthLabels");
         const container = document.getElementById("graphContainer");
         if (!dataEl || !container) return;
-
         const weeks = JSON.parse(dataEl.textContent || "[]");
-        const months = monthEl ? JSON.parse(monthEl.textContent || "[]") : [];
-
-        const wrapper = document.createElement("div");
-        wrapper.className = "contribution-grid";
-
-        months.forEach((m) => {
-          const label = document.createElement("div");
-          label.className = "font-mono text-[10px] text-text-dim";
-          label.style.cssText = `position: absolute; left: ${m.weekIndex * 13 + 44}px; top: -16px;`;
-          label.textContent = m.month;
-          container.appendChild(label);
-        });
+        const wrapper = document.createDocumentFragment();
 
         weeks.forEach((week) => {
           const col = document.createElement("div");
-          col.className = "contribution-week";
+          col.className = "contrib-col";
           week.forEach((day) => {
             const block = document.createElement("div");
-            block.className = `contribution-day level-${day.level}`;
-            block.title = `${day.date}: ${day.count} contributions`;
+            block.className = "contrib-day contrib-l" + day.level;
+            block.title = day.date + ": " + day.count + " contributions";
             col.appendChild(block);
           });
           wrapper.appendChild(col);
@@ -652,102 +542,90 @@ const skills = [
       })();
 
       // WakaTime tabs
-      (function initWakaTabs() {
-        document.querySelectorAll(".waka-tab-btn").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            const tabId = btn.getAttribute("data-tab");
-            document
-              .querySelectorAll(".waka-tab-btn")
-              .forEach((b) => {
-                b.className =
-                  "waka-tab-btn rounded-lg border border-border bg-surface px-3.5 py-2 font-mono text-xs font-medium text-text-muted hover:border-accent/30 hover:text-accent";
-              });
-            btn.className =
-              "waka-tab-btn active rounded-lg border border-accent/30 bg-accent/10 px-3.5 py-2 font-mono text-xs font-medium text-accent hover:bg-accent/20";
-            document
-              .querySelectorAll(".waka-tab-content")
-              .forEach((c) => c.classList.remove("active"));
-            document.getElementById(`tab-${tabId}`)?.classList.add("active");
+      (function() {
+        document.querySelectorAll(".waka-tab-btn").forEach(function(btn) {
+          btn.addEventListener("click", function() {
+            var tabId = btn.getAttribute("data-tab");
+            document.querySelectorAll(".waka-tab-btn").forEach(function(b) {
+              b.classList.remove("active");
+            });
+            btn.classList.add("active");
+            document.querySelectorAll(".waka-tab-content").forEach(function(c) {
+              c.classList.remove("active");
+            });
+            var target = document.getElementById("tab-" + tabId);
+            if (target) target.classList.add("active");
           });
         });
       })();
 
-      // Pie chart interactions
-      (function initPieChart() {
-        const pieCenterText = document.getElementById("pieCenterText");
-        const pieCenterTime = document.getElementById("pieCenterTime");
-        const pieCenterPercent = document.getElementById("pieCenterPercent");
-        const pieTooltip = document.getElementById("pieTooltip");
-        const pieChart = document.getElementById("pieChart");
-        const pieContainer = document.getElementById("pieContainer");
-
+      // Pie chart
+      (function() {
+        var pieCenterText = document.getElementById("pieCenterText");
+        var pieCenterTime = document.getElementById("pieCenterTime");
+        var pieCenterPct = document.getElementById("pieCenterPercent");
+        var pieTooltip = document.getElementById("pieTooltip");
+        var pieChart = document.getElementById("pieChart");
+        var pieContainer = document.getElementById("pieContainer");
         if (!pieChart || !pieCenterText) return;
 
-        const langDataEl = document.getElementById("langData");
-        const languages = langDataEl ? JSON.parse(langDataEl.textContent || "[]") : [];
-        const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
+        var langDataEl = document.getElementById("langData");
+        var languages = langDataEl ? JSON.parse(langDataEl.textContent || "[]") : [];
+        var colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
 
-        function updatePieCenter(index) {
+        function updateCenter(index) {
           if (index >= 0 && index < languages.length) {
-            const lang = languages[index];
+            var lang = languages[index];
             pieCenterText.textContent = lang.name;
             pieCenterTime.textContent = lang.text;
-            pieCenterPercent.textContent = lang.percent.toFixed(1) + "%";
+            pieCenterPct.textContent = lang.percent.toFixed(1) + "%";
           }
         }
 
-        pieChart.addEventListener("mousemove", (e) => {
-          const rect = pieChart.getBoundingClientRect();
-          const centerX = rect.left + rect.width / 2;
-          const centerY = rect.top + rect.height / 2;
-          const x = e.clientX - centerX;
-          const y = e.clientY - centerY;
-          let angle = Math.atan2(y, x) * (180 / Math.PI) + 90;
+        pieChart.addEventListener("mousemove", function(e) {
+          var rect = pieChart.getBoundingClientRect();
+          var cx = rect.left + rect.width / 2;
+          var cy = rect.top + rect.height / 2;
+          var x = e.clientX - cx;
+          var y = e.clientY - cy;
+          var angle = Math.atan2(y, x) * (180 / Math.PI) + 90;
           if (angle < 0) angle += 360;
-
-          let cumulativePercent = 0;
-          let hoveredIndex = -1;
-
-          for (let i = 0; i < languages.length && i < 8; i++) {
-            const startAngle = cumulativePercent * 3.6;
-            cumulativePercent += languages[i].percent;
-            const endAngle = cumulativePercent * 3.6;
-            if (angle >= startAngle && angle < endAngle) {
-              hoveredIndex = i;
-              break;
-            }
+          var cum = 0;
+          var idx = -1;
+          for (var i = 0; i < languages.length && i < 8; i++) {
+            var start = cum * 3.6;
+            cum += languages[i].percent;
+            if (angle >= start && angle < cum * 3.6) { idx = i; break; }
           }
-
-          if (hoveredIndex >= 0) {
+          if (idx >= 0) {
             pieTooltip.style.opacity = "1";
-            pieTooltip.style.left = `${e.clientX - pieContainer.getBoundingClientRect().left + 10}px`;
-            pieTooltip.style.top = `${e.clientY - pieContainer.getBoundingClientRect().top - 10}px`;
-            pieTooltip.innerHTML = `
-              <div class="flex items-start gap-2">
-                <div class="h-2.5 w-2.5 shrink-0 mt-0.5 rounded-full" style="background: ${colors[hoveredIndex]}"></div>
-                <div>
-                  <div class="font-semibold text-text">${languages[hoveredIndex].name}</div>
-                  <div class="mt-0.5 flex gap-3 text-text-muted">
-                    <span>${languages[hoveredIndex].text}</span>
-                    <span class="text-accent font-semibold">${languages[hoveredIndex].percent.toFixed(1)}%</span>
-                  </div>
-                </div>
-              </div>
-            `;
-            updatePieCenter(hoveredIndex);
+            pieTooltip.style.left = (e.clientX - pieContainer.getBoundingClientRect().left + 10) + "px";
+            pieTooltip.style.top = (e.clientY - pieContainer.getBoundingClientRect().top - 10) + "px";
+            pieTooltip.innerHTML =
+              '<div class="pie-tooltip-inner">' +
+                '<div class="pie-tooltip-dot" style="background:' + colors[idx] + '"></div>' +
+                '<div>' +
+                  '<div class="pie-tooltip-name">' + languages[idx].name + '</div>' +
+                  '<div class="pie-tooltip-stats">' +
+                    '<span>' + languages[idx].text + '</span>' +
+                    '<span class="pie-tooltip-pct">' + languages[idx].percent.toFixed(1) + '%</span>' +
+                  '</div>' +
+                '</div>' +
+              '</div>';
+            updateCenter(idx);
             pieChart.style.transform = "scale(1.02)";
           }
         });
 
-        pieChart.addEventListener("mouseleave", () => {
+        pieChart.addEventListener("mouseleave", function() {
           pieTooltip.style.opacity = "0";
           pieChart.style.transform = "scale(1)";
-          updatePieCenter(0);
+          updateCenter(0);
         });
 
-        document.querySelectorAll(".pie-legend-item").forEach((item, i) => {
-          item.addEventListener("mouseenter", () => updatePieCenter(i));
-          item.addEventListener("mouseleave", () => updatePieCenter(0));
+        document.querySelectorAll(".pie-legend-item").forEach(function(item, i) {
+          item.addEventListener("mouseenter", function() { updateCenter(i); });
+          item.addEventListener("mouseleave", function() { updateCenter(0); });
         });
       })();
     </script>
