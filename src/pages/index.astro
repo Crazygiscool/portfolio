@@ -1,14 +1,6 @@
 ---
 import "../styles/global.css";
-
-interface Repo {
-  name: string;
-  description: string;
-  language: string;
-  stars: number;
-  url: string;
-  color: string;
-}
+import { fetchRepos, fetchFileTree, type Repo, type FileNode } from "../lib/github";
 
 interface WakaStatItem {
   name: string;
@@ -51,39 +43,13 @@ interface StarredRepo {
   url: string;
 }
 
-const colorMap: Record<string, string> = {
-  Java: "#ea580c",
-  Python: "#eab308",
-  JavaScript: "#eab308",
-  TypeScript: "#3b82f6",
-  Dart: "#06b6d4",
-  GDScript: "#059669",
-  Lua: "#000080",
-  HTML: "#e34c26",
-  CSS: "#563d7c",
-  Shell: "#89e051",
-  Rust: "#dea584",
-  Go: "#00add8",
-  C: "#555555",
-  "C++": "#f34b7d",
-  Kotlin: "#a97bff",
-  Swift: "#ffac45",
-};
-
-const res = await fetch(
-  "https://api.github.com/users/crazygiscool/repos?sort=stars&per_page=100",
+const baseRepos = await fetchRepos();
+const repos: (Repo & { tree: FileNode[] })[] = await Promise.all(
+  baseRepos.map(async (r) => ({
+    ...r,
+    tree: await fetchFileTree(r.name, r.defaultBranch),
+  })),
 );
-const repos: Repo[] = (await res.json())
-  .filter((r: any) => !r.fork && r.description)
-  .sort((a: any, b: any) => b.stargazers_count - a.stargazers_count)
-  .map((r: any) => ({
-    name: r.name,
-    description: r.description,
-    language: r.language || "Code",
-    stars: r.stargazers_count,
-    url: r.html_url,
-    color: colorMap[r.language] || "#a855f7",
-  }));
 
 const contributionsRes = await fetch(
   "https://github-contributions-api.jogruber.de/v4/crazygiscool",
@@ -158,6 +124,58 @@ const skills = [
   { name: "Lua", level: 55, color: "#000080" },
   { name: "Go", level: 45, color: "#00add8" },
 ];
+
+const extColorMap: Record<string, string> = {
+  ts: "#3b82f6",
+  tsx: "#3b82f6",
+  js: "#eab308",
+  jsx: "#eab308",
+  py: "#eab308",
+  java: "#ea580c",
+  go: "#00add8",
+  rs: "#dea584",
+  c: "#555555",
+  cpp: "#f34b7d",
+  h: "#f34b7d",
+  css: "#563d7c",
+  scss: "#563d7c",
+  html: "#e34c26",
+  json: "#a855f7",
+  md: "#8b949e",
+  yml: "#06b6d4",
+  yaml: "#06b6d4",
+  sh: "#89e051",
+  lua: "#000080",
+  dart: "#06b6d4",
+  toml: "#ec4899",
+  xml: "#e34c26",
+  svg: "#10b981",
+  txt: "#8b949e",
+};
+
+function renderTree(nodes: FileNode[]): string {
+  if (!nodes || nodes.length === 0) {
+    return '<p class="tree-empty">No files found</p>';
+  }
+  const items = nodes
+    .map((node) => {
+      if (node.type === "folder") {
+        return `<li class="tree-li tree-folder collapsed">
+          <span class="tree-row"><span class="material-icons tree-icon">folder</span><span class="tree-name">${node.name}</span></span>
+          <ul class="tree-ul">${renderTree(node.children)}</ul>
+        </li>`;
+      }
+      const ext = node.name.includes(".")
+        ? node.name.split(".").pop()!.toLowerCase()
+        : "";
+      const color = extColorMap[ext] || "#8b949e";
+      return `<li class="tree-li tree-file">
+        <span class="tree-row"><span class="material-icons tree-icon">description</span><span class="tree-name">${node.name}</span><span class="tree-ext" style="color:${color}">${ext}</span></span>
+      </li>`;
+    })
+    .join("");
+  return `<ul class="tree-ul">${items}</ul>`;
+}
 ---
 
 <!doctype html>
@@ -171,6 +189,10 @@ const skills = [
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
     />
     <title>Crazygiscool — Developer & Systems Engineer</title>
@@ -271,22 +293,34 @@ const skills = [
             <h2 class="section-title">Projects</h2>
             <div class="section-line"></div>
           </div>
-          <div class="projects-grid">
-            {repos.map((project) => (
-              <a href={project.url} target="_blank" rel="noopener noreferrer" class="project-card">
-                <div class="project-header">
-                  <span class="project-dot" style={`background: ${project.color}`}></span>
-                  <span class="project-name">{project.name}</span>
-                  {project.stars > 0 && (
-                    <span class="project-stars">&starf; {project.stars}</span>
-                  )}
+          <div class="acc-list">
+            <div class="proj-slider">
+              <button class="slider-btn slider-prev" type="button" aria-label="Previous">‹</button>
+              <div class="slider-track" id="projSlider">
+                {repos.map((project, i) => (
+                  <button
+                    class={`slider-card${i === 0 ? " active" : ""}`}
+                    type="button"
+                    data-index={i}
+                  >
+                    <span class="project-dot" style={`background: ${project.color}`}></span>
+                    <span class="slider-card-name">{project.name}</span>
+                    <span class="slider-card-lang">{project.language}</span>
+                  </button>
+                ))}
+              </div>
+              <button class="slider-btn slider-next" type="button" aria-label="Next">›</button>
+            </div>
+
+            {repos.map((project, i) => (
+              <div class={`acc-item${i === 0 ? " open" : ""}`} data-panel={i}>
+                <div class="acc-body">
+                  <div class="file-tree" set:html={renderTree(project.tree)}></div>
+                  <a href={project.url} target="_blank" rel="noopener noreferrer" class="acc-source">
+                    View on GitHub →
+                  </a>
                 </div>
-                <p class="project-desc">{project.description}</p>
-                <div class="project-footer">
-                  <span class="project-lang">{project.language}</span>
-                  <span class="project-source">View Source →</span>
-                </div>
-              </a>
+              </div>
             ))}
           </div>
         </div>
@@ -625,6 +659,56 @@ const skills = [
         document.querySelectorAll(".pie-legend-item").forEach(function(item, i) {
           item.addEventListener("mouseenter", function() { updateCenter(i); });
           item.addEventListener("mouseleave", function() { updateCenter(0); });
+        });
+      })();
+
+      // Projects slider + panel
+      (function() {
+        var slider = document.getElementById("projSlider");
+        if (!slider) return;
+        var cards = Array.from(slider.querySelectorAll(".slider-card"));
+        var panels = Array.from(document.querySelectorAll(".acc-item"));
+        if (cards.length === 0) return;
+
+        function select(index) {
+          cards.forEach(function(c, i) {
+            c.classList.toggle("active", i === index);
+          });
+          panels.forEach(function(p, i) {
+            p.classList.toggle("open", i === index);
+          });
+          var card = cards[index];
+          if (card) {
+            var left = card.offsetLeft - slider.clientWidth / 2 + card.clientWidth / 2;
+            slider.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
+          }
+        }
+
+        cards.forEach(function(card, i) {
+          card.addEventListener("click", function() { select(i); });
+        });
+
+        var prev = document.querySelector(".slider-prev");
+        var next = document.querySelector(".slider-next");
+        var current = 0;
+        if (prev) prev.addEventListener("click", function() {
+          current = (current - 1 + cards.length) % cards.length;
+          select(current);
+        });
+        if (next) next.addEventListener("click", function() {
+          current = (current + 1) % cards.length;
+          select(current);
+        });
+      })();
+
+      // File tree: collapse/expand folders
+      (function() {
+        document.querySelectorAll(".tree-folder > .tree-row").forEach(function(row) {
+          row.addEventListener("click", function(e) {
+            e.stopPropagation();
+            var folder = row.parentElement;
+            if (folder) folder.classList.toggle("collapsed");
+          });
         });
       })();
     </script>
