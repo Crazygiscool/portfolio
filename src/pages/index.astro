@@ -1,180 +1,90 @@
 ---
 import "../styles/global.css";
-import { fetchRepos, fetchFileTree, type Repo, type FileNode } from "../lib/github";
+import { ArrowDown, ArrowUpRight, GitBranch, Mail, Video } from "lucide-react";
+import ActivityPanel from "../components/ActivityPanel.astro";
+import BottomDock from "../components/BottomDock.astro";
+import ProjectCard from "../components/ProjectCard.astro";
+import SkillsTools from "../components/SkillsTools.astro";
+import { fetchGitHubContributionWeeks, fetchGitHubSignals } from "../lib/github";
+import { projects } from "../data/portfolio";
 
-interface WakaStatItem {
+interface WakaTimeItem {
   name: string;
-  total_seconds: number;
   percent: number;
-  digital: string;
   text: string;
-  hours: number;
-  minutes: number;
 }
 
-interface WakaStatsData {
+interface WakaTimeStats {
   human_readable_range: string;
   human_readable_total: string;
   human_readable_daily_average: string;
-  human_readable_total_including_other_language: string;
-  total_seconds: number;
-  daily_average: number;
   days_minus_holidays: number;
-  best_day: { date: string; text: string; total_seconds: number } | null;
-  languages: WakaStatItem[];
-  editors: WakaStatItem[];
-  operating_systems: WakaStatItem[];
-  categories: WakaStatItem[];
+  best_day: { date: string; text: string } | null;
+  languages: WakaTimeItem[];
+  editors: WakaTimeItem[];
+  operating_systems: WakaTimeItem[];
 }
 
-interface WakaAllTimeData {
+interface WakaTimeAllTimeStats {
   text: string;
-  digital: string;
   daily_average: number;
   range: { start_date: string };
-  total_seconds: number;
 }
 
-interface StarredRepo {
-  name: string;
-  description: string | null;
-  language: string | null;
-  stars: number;
-  url: string;
+interface WakaTimeResponse {
+  data?: WakaTimeStats;
 }
 
-const baseRepos = await fetchRepos();
-const repos: (Repo & { tree: FileNode[] })[] = await Promise.all(
-  baseRepos.map(async (r) => ({
-    ...r,
-    tree: await fetchFileTree(r.name, r.defaultBranch),
-  })),
-);
+interface WakaTimeAllTimeResponse {
+  data?: WakaTimeAllTimeStats;
+}
 
-const contributionsRes = await fetch(
-  "https://github-contributions-api.jogruber.de/v4/crazygiscool",
-);
-const contributions = contributionsRes.ok
-  ? await contributionsRes.json()
-  : { contributions: [], totalContributions: 0 };
+const githubUsername = import.meta.env.GITHUB_USERNAME?.trim() || "crazygiscool";
+const githubProfileUrl = `https://github.com/${encodeURIComponent(githubUsername)}`;
+const avatarUrl = `https://github.com/${encodeURIComponent(githubUsername)}.png?size=176`;
+const githubSignals = await fetchGitHubSignals();
+const githubLanguages = githubSignals.languages.length
+  ? githubSignals.languages
+  : ["Java", "Rust", "Dart", "TypeScript", "Go"];
+const githubTools = githubSignals.tools.length
+  ? githubSignals.tools
+  : ["Git", "Linux", "Neovim", "Minecraft", "Flutter"];
 
-const rawContributions = contributions.contributions || [];
-const totalContributions = rawContributions.reduce(
-  (sum: number, d: any) => sum + (d.count || 0), 0,
-);
+const contributionWeeks = await fetchGitHubContributionWeeks(githubUsername);
+const contributionTotal = contributionWeeks
+  .flat()
+  .reduce((total, day) => total + (day?.count ?? 0), 0);
 
-const weeksData: { date: string; count: number; level: number }[][] = [];
-let curWeek: { date: string; count: number; level: number }[] = [];
-
-rawContributions.forEach((day: any) => {
-  const count = day.count || 0;
-  let level = 0;
-  if (count > 0) {
-    if (count <= 2) level = 1;
-    else if (count <= 5) level = 2;
-    else if (count <= 10) level = 3;
-    else level = 4;
-  }
-  curWeek.push({ date: day.date, count, level });
-  if (curWeek.length === 7) {
-    weeksData.push(curWeek);
-    curWeek = [];
-  }
-});
-if (curWeek.length > 0) weeksData.push(curWeek);
-
+let wakaStats: WakaTimeStats | null = null;
+let wakaAllTimeStats: WakaTimeAllTimeStats | null = null;
 const wakaKey = import.meta.env.WAKATIME_API_KEY;
-let wakaStats: { data: WakaStatsData } | null = null;
-let wakaAllTimeStats: { data: WakaAllTimeData } | null = null;
-
 if (wakaKey) {
-  const wakaRes = await fetch(
-    "https://wakatime.com/api/v1/users/current/stats/last_7_days",
-    { headers: { Authorization: `Basic ${btoa(wakaKey)}` } },
-  );
-  wakaStats = await wakaRes.json();
-
-  const wakaAllRes = await fetch(
-    "https://wakatime.com/api/v1/users/current/all_time_since_today",
-    { headers: { Authorization: `Basic ${btoa(wakaKey)}` } },
-  );
-  wakaAllTimeStats = await wakaAllRes.json();
-}
-
-const starredRes = await fetch(
-  "https://api.github.com/users/crazygiscool/starred?per_page=30&sort=updated",
-);
-const starredRepos: StarredRepo[] = starredRes.ok
-  ? (await starredRes.json()).slice(0, 6).map((r: any) => ({
-      name: r.name,
-      description: r.description,
-      language: r.language || "Code",
-      stars: r.stargazers_count,
-      url: r.html_url,
-    }))
-  : [];
-
-const skills = [
-  { name: "Java", level: 85, color: "#ea580c" },
-  { name: "GDScript", level: 80, color: "#059669" },
-  { name: "Dart", level: 60, color: "#06b6d4" },
-  { name: "Python", level: 70, color: "#eab308" },
-  { name: "TypeScript", level: 65, color: "#3b82f6" },
-  { name: "JavaScript", level: 70, color: "#eab308" },
-  { name: "Lua", level: 55, color: "#000080" },
-  { name: "Go", level: 45, color: "#00add8" },
-];
-
-const extColorMap: Record<string, string> = {
-  ts: "#3b82f6",
-  tsx: "#3b82f6",
-  js: "#eab308",
-  jsx: "#eab308",
-  py: "#eab308",
-  java: "#ea580c",
-  go: "#00add8",
-  rs: "#dea584",
-  c: "#555555",
-  cpp: "#f34b7d",
-  h: "#f34b7d",
-  css: "#563d7c",
-  scss: "#563d7c",
-  html: "#e34c26",
-  json: "#a855f7",
-  md: "#8b949e",
-  yml: "#06b6d4",
-  yaml: "#06b6d4",
-  sh: "#89e051",
-  lua: "#000080",
-  dart: "#06b6d4",
-  toml: "#ec4899",
-  xml: "#e34c26",
-  svg: "#10b981",
-  txt: "#8b949e",
-};
-
-function renderTree(nodes: FileNode[]): string {
-  if (!nodes || nodes.length === 0) {
-    return '<p class="tree-empty">No files found</p>';
+  const headers = { Authorization: `Basic ${btoa(wakaKey)}` };
+  try {
+    const response = await fetch(
+      "https://wakatime.com/api/v1/users/current/stats/last_7_days",
+      { headers, signal: AbortSignal.timeout(3500) },
+    );
+    if (response.ok) {
+      const data = (await response.json()) as WakaTimeResponse;
+      wakaStats = data.data ?? null;
+    }
+  } catch {
+    wakaStats = null;
   }
-  const items = nodes
-    .map((node) => {
-      if (node.type === "folder") {
-        return `<li class="tree-li tree-folder collapsed">
-          <span class="tree-row"><span class="material-icons tree-icon">folder</span><span class="tree-name">${node.name}</span></span>
-          <ul class="tree-ul">${renderTree(node.children)}</ul>
-        </li>`;
-      }
-      const ext = node.name.includes(".")
-        ? node.name.split(".").pop()!.toLowerCase()
-        : "";
-      const color = extColorMap[ext] || "#8b949e";
-      return `<li class="tree-li tree-file">
-        <span class="tree-row"><span class="material-icons tree-icon">description</span><span class="tree-name">${node.name}</span><span class="tree-ext" style="color:${color}">${ext}</span></span>
-      </li>`;
-    })
-    .join("");
-  return `<ul class="tree-ul">${items}</ul>`;
+
+  try {
+    const response = await fetch(
+      "https://wakatime.com/api/v1/users/current/all_time_since_today",
+      { headers, signal: AbortSignal.timeout(3500) },
+    );
+    if (response.ok) {
+      const data = (await response.json()) as WakaTimeAllTimeResponse;
+      wakaAllTimeStats = data.data ?? null;
+    }
+  } catch {
+    wakaAllTimeStats = null;
+  }
 }
 ---
 
@@ -182,535 +92,125 @@ function renderTree(nodes: FileNode[]): string {
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content="Crazygiscool — Developer & Systems Engineer" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Crazygiscool's personal portfolio: a hobbyist making game plugins, desktop apps, language tools, and web projects for fun." />
+    <meta name="theme-color" content="#0b1220" />
+    <link rel="canonical" href="https://crazyg.is-a.dev/" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/icon?family=Material+Icons"
-      rel="stylesheet"
-    />
-    <title>Crazygiscool — Developer & Systems Engineer</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600;700&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <title>Crazygiscool's Portfolio</title>
   </head>
   <body>
-    <nav class="nav">
-      <div class="nav-inner">
-        <a href="#" class="nav-logo">$ whoami</a>
-        <div class="nav-links">
-          <a href="#tech" class="nav-link">// tech</a>
-          <a href="#projects" class="nav-link">// projects</a>
-          <a href="#stats" class="nav-link">// stats</a>
-          <a href="#contact" class="nav-link">// contact</a>
-        </div>
-      </div>
-    </nav>
-
-    <main class="main">
-      <!-- HERO -->
-      <section class="hero">
-        <div class="hero-grid">
-          <div class="anim-fade-in" style="display:flex;flex-direction:column;gap:20px">
-            <span class="hero-label">DEVELOPER &amp; HOBBYIST</span>
-            <h1 class="hero-title">
-              CRAZYGISCOOL<span class="hero-accent">_</span>
-              <span class="hero-cursor cursor-cyan">|</span>
-            </h1>
-            <div class="hero-pills">
-              <span class="pill">$ cat /etc/bio</span>
-              <span class="pill pill-green">&gt; Developer passionate about Minecraft plugins, Godot games &amp; systems tooling</span>
-            </div>
-            <div class="hero-stats">
-              <div class="hero-stat">
-                <span class="hero-stat-value">{totalContributions}</span>
-                <span class="hero-stat-label">contributions / yr</span>
-              </div>
-              <div class="hero-stat">
-                <span class="hero-stat-value">{repos.length}</span>
-                <span class="hero-stat-label">projects</span>
-              </div>
-            </div>
-            <div class="hero-links">
-              <a href="https://github.com/crazygiscool" target="_blank" rel="noopener noreferrer" class="hero-link">
-                <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                <span>github</span>
-                <span class="link-arrow">→</span>
-              </a>
-              <a href="https://youtube.com/@crazygiscool" target="_blank" rel="noopener noreferrer" class="hero-link hero-link-pink">
-                <svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                <span>youtube</span>
-                <span class="link-arrow">→</span>
-              </a>
-              <a href="mailto:crazygiscool@proton.me" class="hero-link hero-link-cyan">
-                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-                <span>email</span>
-                <span class="link-arrow">→</span>
-              </a>
-            </div>
-          </div>
-
-          <div class="hero-side anim-slide-in">
-            <div class="contrib-wrapper" id="contribWrapper">
-              <div id="graphContainer" class="contrib-grid">
-                <script id="contribData" type="application/json" set:html={JSON.stringify(weeksData)}></script>
-              </div>
-              <div id="contribTooltip" class="contrib-tooltip"></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- TECH STACK -->
-      <section id="tech" class="section">
-        <div class="section-inner">
-          <div class="section-header">
-            <span class="section-number">01</span>
-            <h2 class="section-title">Tech Stack</h2>
-            <div class="section-line"></div>
-          </div>
-          <div class="tech-grid">
-            {skills.map((skill) => (
-              <div class="tech-card" style={`border-color: ${skill.color}33`}
-                onmouseover="this.style.borderColor='{skill.color}'" onmouseout="this.style.borderColor=''">
-                <div class="tech-dot" style={`background: ${skill.color}`}></div>
-                <span class="tech-name">{skill.name}</span>
-                <span class="tech-level">{skill.level}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <!-- PROJECTS -->
-      <section id="projects" class="section">
-        <div class="section-inner">
-          <div class="section-header">
-            <span class="section-number">02</span>
-            <h2 class="section-title">Projects</h2>
-            <div class="section-line"></div>
-          </div>
-          <div class="acc-list">
-            <div class="proj-slider">
-              <button class="slider-btn slider-prev" type="button" aria-label="Previous">‹</button>
-              <div class="slider-track" id="projSlider">
-                {repos.map((project, i) => (
-                  <button
-                    class={`slider-card${i === 0 ? " active" : ""}`}
-                    type="button"
-                    data-index={i}
-                  >
-                    <span class="project-dot" style={`background: ${project.color}`}></span>
-                    <span class="slider-card-name">{project.name}</span>
-                    <span class="slider-card-lang">{project.language}</span>
-                  </button>
+    <div class="site-atmosphere" aria-hidden="true"></div>
+    <main id="top">
+      <header class="hero page-shell">
+        <div class="hero-activity-backdrop" role="group" aria-label="GitHub contribution chart moving behind the introduction">
+          <div class="contribution-track">
+            {Array.from({ length: 4 }, (_, copyIndex) => (
+              <div
+                class="native-contribution-chart"
+                role={copyIndex === 0 ? "img" : undefined}
+                aria-label={copyIndex === 0 ? "GitHub's native contribution graph. Hover a day to see its exact count and date." : undefined}
+                aria-hidden={copyIndex === 0 ? undefined : "true"}
+              >
+                {contributionWeeks.map((week) => (
+                  <div class="contribution-week">
+                    {week.map((day) => day ? (
+                      <span
+                        class="native-contribution-day"
+                        data-level={day.level}
+                        title={`${day.count} ${day.count === 1 ? "contribution" : "contributions"} on ${day.date}`}
+                        aria-label={`${day.count} contributions on ${day.date}`}
+                        aria-hidden="true"
+                      ></span>
+                    ) : (
+                      <span class="native-contribution-empty" aria-hidden="true"></span>
+                    ))}
+                  </div>
                 ))}
               </div>
-              <button class="slider-btn slider-next" type="button" aria-label="Next">›</button>
-            </div>
-
-            {repos.map((project, i) => (
-              <div class={`acc-item${i === 0 ? " open" : ""}`} data-panel={i}>
-                <div class="acc-body">
-                  <div class="file-tree" set:html={renderTree(project.tree)}></div>
-                  <a href={project.url} target="_blank" rel="noopener noreferrer" class="acc-source">
-                    View on GitHub →
-                  </a>
-                </div>
-              </div>
             ))}
           </div>
         </div>
-      </section>
 
-      <!-- WAKATIME SYSTEM STATS -->
-      {wakaStats && wakaStats.data && (
-        <section id="stats" class="section">
-          <div class="section-inner">
-            <div class="section-header">
-              <span class="section-number">03</span>
-              <h2 class="section-title">System Stats</h2>
-              <div class="section-line"></div>
-            </div>
-
-            <div class="terminal">
-              <div class="terminal-header">
-                <span class="terminal-dot terminal-dot-red"></span>
-                <span class="terminal-dot terminal-dot-yellow"></span>
-                <span class="terminal-dot terminal-dot-green"></span>
-                <span class="terminal-title">wakatime@stats -- {wakaStats.data.human_readable_range}</span>
-              </div>
-              <div class="terminal-body">
-                <div class="terminal-line">
-                  <span class="terminal-prompt">$</span>
-                  <span>cat /proc/coding_activity</span>
-                </div>
-                <div class="terminal-output">
-                  <span>Total: <span class="terminal-stat-value-accent">{wakaStats.data.human_readable_total}</span></span>
-                  <span>Daily: <span class="terminal-stat-value-cyan">{wakaStats.data.human_readable_daily_average}</span></span>
-                  <span>Active: <span class="terminal-stat-value-green">{wakaStats.data.days_minus_holidays}d</span></span>
-                  <span>Best: <span class="terminal-stat-value-pink">{wakaStats.data.best_day?.text || '-'}</span></span>
-                </div>
-                {wakaAllTimeStats?.data && (
-                  <>
-                    <div class="terminal-line" style="margin-top:2px">
-                      <span class="terminal-prompt">$</span>
-                      <span>cat /proc/all_time_coding</span>
-                    </div>
-                    <div class="terminal-output">
-                      <span>All time: <span class="terminal-stat-value-accent">{wakaAllTimeStats.data.text}</span></span>
-                      <span>Daily avg: <span class="terminal-stat-value-cyan">{Math.round((wakaAllTimeStats.data.daily_average || 0) / 3600 * 10) / 10}h</span></span>
-                      <span>Since: <span class="terminal-stat-value-pink">{wakaAllTimeStats.data.range.start_date}</span></span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div class="waka-tabs">
-              <div class="waka-tab-bar">
-                <button class="waka-tab-btn active" data-tab="languages">Languages</button>
-                <button class="waka-tab-btn" data-tab="editors">Editors</button>
-                <button class="waka-tab-btn" data-tab="os">OS</button>
-              </div>
-
-              <div class="waka-tab-content active" id="tab-languages">
-                <div class="pie-section">
-                  <script id="langData" type="application/json" set:html={JSON.stringify(wakaStats.data.languages.slice(0, 8))}></script>
-                  <div class="pie-wrapper" id="pieContainer">
-                    <div
-                      id="pieChart"
-                      class="pie-chart"
-                      style={(() => {
-                        const topLangs = wakaStats.data.languages.slice(0, 8);
-                        const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
-                        let gradient = "";
-                        let currentDeg = 0;
-                        topLangs.forEach((lang, i) => {
-                          const deg = (lang.percent / 100) * 360;
-                          gradient += `${colors[i % colors.length]} ${currentDeg}deg ${currentDeg + deg}deg, `;
-                          currentDeg += deg;
-                        });
-                        return `background: conic-gradient(${gradient.slice(0, -2)});`;
-                      })()}
-                    >
-                      <div class="pie-center">
-                        <span class="pie-center-name" id="pieCenterText">{wakaStats.data.languages[0]?.name || '-'}</span>
-                        <span class="pie-center-time" id="pieCenterTime">{wakaStats.data.languages[0]?.text || '-'}</span>
-                        <span class="pie-center-pct" id="pieCenterPercent">{wakaStats.data.languages[0]?.percent.toFixed(1) || '0'}%</span>
-                      </div>
-                    </div>
-                    <div id="pieTooltip" class="pie-tooltip"></div>
-                  </div>
-                  <div class="pie-legend">
-                    {wakaStats.data.languages.slice(0, 8).map((lang, i) => {
-                      const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
-                      return (
-                        <div class="pie-legend-item" data-index={i}>
-                          <span class="pie-legend-dot" style={`background: ${colors[i % colors.length]}`}></span>
-                          <span class="pie-legend-name">{lang.name}</span>
-                          <span class="pie-legend-pct">{lang.percent.toFixed(1)}%</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              <div class="waka-tab-content" id="tab-editors">
-                {wakaStats.data.editors && wakaStats.data.editors.length > 0 ? (
-                  <div class="blocks-grid">
-                    {wakaStats.data.editors.map((editor, i) => {
-                      const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
-                      return (
-                        <div class="bar-block">
-                          <div class="bar-header">
-                            <span class="bar-name">{editor.name}</span>
-                            <span class="bar-pct">{editor.percent.toFixed(1)}%</span>
-                          </div>
-                          <div class="bar-track">
-                            <div class="bar-fill" style={`width: ${editor.percent}%; background: ${colors[i % colors.length]}`}></div>
-                          </div>
-                          <span class="bar-time">{editor.text}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">No editor data</p>
-                )}
-              </div>
-
-              <div class="waka-tab-content" id="tab-os">
-                {wakaStats.data.operating_systems && wakaStats.data.operating_systems.length > 0 ? (
-                  <div class="blocks-grid">
-                    {wakaStats.data.operating_systems.map((os, i) => {
-                      const colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
-                      return (
-                        <div class="bar-block">
-                          <div class="bar-header">
-                            <span class="bar-name">{os.name}</span>
-                            <span class="bar-pct">{os.percent.toFixed(1)}%</span>
-                          </div>
-                          <div class="bar-track">
-                            <div class="bar-fill" style={`width: ${os.percent}%; background: ${colors[i % colors.length]}`}></div>
-                          </div>
-                          <span class="bar-time">{os.text}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">No OS data</p>
-                )}
-              </div>
-
-            </div>
+        <div class="hero-copy">
+          <div class="availability"><span class="availability-dot"></span><span class="availability-copy">Hobbyist <span class="availability-divider">/</span> here for fun</span></div>
+          <p class="hero-kicker">Making things <span>·</span> learning as I go</p>
+          <h1>Making things<br /><span>just for fun.</span></h1>
+          <p class="hero-description">
+            I build little tools, game projects, desktop apps, and whatever else catches my attention. Mostly here to learn by making.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#work">
+              Browse my projects
+              <ArrowDown size={16} strokeWidth={1.8} aria-hidden="true" />
+            </a>
+            <a class="social-link" href={githubProfileUrl} target="_blank" rel="noreferrer" aria-label="GitHub profile">
+              <GitBranch size={19} strokeWidth={1.8} aria-hidden="true" />
+            </a>
+            <a class="social-link social-link-youtube" href="https://youtube.com/@crazygiscool" target="_blank" rel="noreferrer" aria-label="YouTube channel">
+              <Video size={19} strokeWidth={1.8} aria-hidden="true" />
+            </a>
+            <a class="social-link" href="mailto:crazygiscool@proton.me" aria-label="Send email">
+              <Mail size={18} strokeWidth={1.8} aria-hidden="true" />
+            </a>
           </div>
-        </section>
-      )}
+          <div class="hero-footnote"><span>01</span> GAMES <i></i> LITTLE TOOLS <i></i> SIDE PROJECTS</div>
+        </div>
 
-      <!-- STARRED REPOS -->
-      <section class="section">
-        <div class="section-inner">
-          <div class="section-header">
-            <span class="section-number">04</span>
-            <h2 class="section-title">Starred Repos</h2>
-            <div class="section-line"></div>
+        <div class="hero-visual">
+          <a class="avatar-frame" href={githubProfileUrl} target="_blank" rel="noreferrer" aria-label={`Open ${githubUsername}'s GitHub profile`}>
+            <img src={avatarUrl} alt="" width="144" height="144" fetchpriority="high" />
+            <span class="avatar-ring" aria-hidden="true"></span>
+          </a>
+        </div>
+      </header>
+
+      <section class="work-section page-shell" id="work" aria-labelledby="work-title">
+        <div class="section-heading">
+          <div>
+            <p class="section-eyebrow">01 / PROJECTS</p>
+            <h2 id="work-title">A little bit of everything.</h2>
           </div>
-          {starredRepos.length > 0 ? (
-            <div class="starred-grid">
-              {starredRepos.map((repo) => (
-                <a href={repo.url} target="_blank" rel="noopener noreferrer" class="starred-card">
-                  <div class="starred-header">
-                    <span class="starred-name">{repo.name}</span>
-                    <span class="starred-stars">&starf; {repo.stars}</span>
-                  </div>
-                  <p class="starred-desc">{repo.description || 'No description'}</p>
-                  <span class="starred-lang">{repo.language || 'Code'}</span>
-                </a>
-              ))}
-            </div>
-          ) : (
-            <p style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted)">No starred repositories</p>
-          )}
+          <p class="section-aside">Things I made because<br />I wanted to see if I could.</p>
+        </div>
+        <div class="project-grid">
+          {projects.map((project, index) => <ProjectCard project={project} index={index + 1} />)}
         </div>
       </section>
 
-      <!-- CONTACT -->
-      <section id="contact" class="contact-section">
-        <div class="contact-inner">
-          <div class="contact-header">
-            <span class="section-number">05</span>
-            <h2 class="section-title">Contact</h2>
-            <div class="contact-line"></div>
+      <section class="expertise-section page-shell" id="skills" aria-labelledby="skills-title">
+        <div class="section-heading section-heading-compact">
+          <div>
+            <p class="section-eyebrow">02 / SKILLS &amp; TOOLS</p>
+            <h2 id="skills-title">A snapshot of my GitHub.</h2>
           </div>
-          <p class="contact-tagline">$ echo "Let's build something."</p>
-          <div class="contact-actions">
-            <a href="mailto:crazygiscool@proton.me" class="contact-btn contact-btn-primary">
-              <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-              crazygiscool@proton.me
-            </a>
-            <a href="https://github.com/crazygiscool" target="_blank" rel="noopener noreferrer" class="contact-btn contact-btn-secondary">
-              <svg viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-              github/crazygiscool
-            </a>
-          </div>
+          <p class="section-aside">Languages and tools pulled<br />from my GitHub projects.</p>
         </div>
+        <SkillsTools languages={githubLanguages} tools={githubTools} />
+      </section>
+
+      <ActivityPanel contributionTotal={contributionTotal} wakaStats={wakaStats} wakaAllTimeStats={wakaAllTimeStats} />
+
+      <section class="contact-section page-shell" id="contact" aria-labelledby="contact-title">
+        <div class="contact-copy">
+          <p class="section-eyebrow">04 / SAY HELLO</p>
+          <h2 id="contact-title">Let's talk about a project.</h2>
+          <p>Or just send me something cool you found.</p>
+        </div>
+        <a class="contact-cta" href="mailto:crazygiscool@proton.me">
+          <span>crazygiscool@proton.me</span>
+          <span class="contact-cta-icon"><ArrowUpRight size={18} strokeWidth={1.8} aria-hidden="true" /></span>
+        </a>
       </section>
     </main>
 
-    <footer class="footer">
-      <p class="footer-text">© {new Date().getFullYear()} CRAZYGISCOOL // built with Astro</p>
+    <footer class="footer page-shell">
+      <a class="footer-mark" href="#top" aria-label="Back to top"><img src={avatarUrl} alt="" width="26" height="26" /></a>
+      <span>Made for fun.</span>
+      <span class="footer-right">CRAZYGISCOOL <i></i> {new Date().getFullYear()}</span>
     </footer>
-
-    <script>
-      // Contribution graph
-      (function() {
-        var dataEl = document.getElementById("contribData");
-        var container = document.getElementById("graphContainer");
-        var tooltip = document.getElementById("contribTooltip");
-        if (!dataEl || !container || !tooltip) return;
-        var weeks = JSON.parse(dataEl.textContent || "[]");
-        var frag = document.createDocumentFragment();
-
-        weeks.forEach(function(week) {
-          var col = document.createElement("div");
-          col.className = "contrib-col";
-          week.forEach(function(day) {
-            var block = document.createElement("div");
-            block.className = "contrib-day contrib-l" + day.level;
-            block.dataset.date = day.date;
-            block.dataset.count = day.count;
-
-            block.addEventListener("mouseenter", function(e) {
-              tooltip.style.opacity = "1";
-            });
-
-            block.addEventListener("mousemove", function(e) {
-              var x = e.clientX + 12;
-              var y = e.clientY - 10;
-              if (x + 170 > window.innerWidth) x = window.innerWidth - 180;
-              if (y < 0) y = 10;
-              tooltip.style.left = x + "px";
-              tooltip.style.top = y + "px";
-              tooltip.innerHTML =
-                '<div class="contrib-tooltip-date">' + day.date + '</div>' +
-                '<div class="contrib-tooltip-count">' + day.count + ' contribution' + (day.count === 1 ? "" : "s") + '</div>';
-            });
-
-            block.addEventListener("mouseleave", function() {
-              tooltip.style.opacity = "0";
-            });
-
-            col.appendChild(block);
-          });
-          frag.appendChild(col);
-        });
-
-        container.appendChild(frag);
-      })();
-
-      // WakaTime tabs
-      (function() {
-        document.querySelectorAll(".waka-tab-btn").forEach(function(btn) {
-          btn.addEventListener("click", function() {
-            var tabId = btn.getAttribute("data-tab");
-            document.querySelectorAll(".waka-tab-btn").forEach(function(b) {
-              b.classList.remove("active");
-            });
-            btn.classList.add("active");
-            document.querySelectorAll(".waka-tab-content").forEach(function(c) {
-              c.classList.remove("active");
-            });
-            var target = document.getElementById("tab-" + tabId);
-            if (target) target.classList.add("active");
-          });
-        });
-      })();
-
-      // Pie chart
-      (function() {
-        var pieCenterText = document.getElementById("pieCenterText");
-        var pieCenterTime = document.getElementById("pieCenterTime");
-        var pieCenterPct = document.getElementById("pieCenterPercent");
-        var pieTooltip = document.getElementById("pieTooltip");
-        var pieChart = document.getElementById("pieChart");
-        var pieContainer = document.getElementById("pieContainer");
-        if (!pieChart || !pieCenterText) return;
-
-        var langDataEl = document.getElementById("langData");
-        var languages = langDataEl ? JSON.parse(langDataEl.textContent || "[]") : [];
-        var colors = ["#7c3aed", "#ec4899", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
-
-        function updateCenter(index) {
-          if (index >= 0 && index < languages.length) {
-            var lang = languages[index];
-            pieCenterText.textContent = lang.name;
-            pieCenterTime.textContent = lang.text;
-            pieCenterPct.textContent = lang.percent.toFixed(1) + "%";
-          }
-        }
-
-        pieChart.addEventListener("mousemove", function(e) {
-          var rect = pieChart.getBoundingClientRect();
-          var cx = rect.left + rect.width / 2;
-          var cy = rect.top + rect.height / 2;
-          var x = e.clientX - cx;
-          var y = e.clientY - cy;
-          var angle = Math.atan2(y, x) * (180 / Math.PI) + 90;
-          if (angle < 0) angle += 360;
-          var cum = 0;
-          var idx = -1;
-          for (var i = 0; i < languages.length && i < 8; i++) {
-            var start = cum * 3.6;
-            cum += languages[i].percent;
-            if (angle >= start && angle < cum * 3.6) { idx = i; break; }
-          }
-          if (idx >= 0) {
-            pieTooltip.style.opacity = "1";
-            pieTooltip.style.left = (e.clientX - pieContainer.getBoundingClientRect().left + 10) + "px";
-            pieTooltip.style.top = (e.clientY - pieContainer.getBoundingClientRect().top - 10) + "px";
-            pieTooltip.innerHTML =
-              '<div class="pie-tooltip-inner">' +
-                '<div class="pie-tooltip-dot" style="background:' + colors[idx] + '"></div>' +
-                '<div>' +
-                  '<div class="pie-tooltip-name">' + languages[idx].name + '</div>' +
-                  '<div class="pie-tooltip-stats">' +
-                    '<span>' + languages[idx].text + '</span>' +
-                    '<span class="pie-tooltip-pct">' + languages[idx].percent.toFixed(1) + '%</span>' +
-                  '</div>' +
-                '</div>' +
-              '</div>';
-            updateCenter(idx);
-            pieChart.style.transform = "scale(1.02)";
-          }
-        });
-
-        pieChart.addEventListener("mouseleave", function() {
-          pieTooltip.style.opacity = "0";
-          pieChart.style.transform = "scale(1)";
-          updateCenter(0);
-        });
-
-        document.querySelectorAll(".pie-legend-item").forEach(function(item, i) {
-          item.addEventListener("mouseenter", function() { updateCenter(i); });
-          item.addEventListener("mouseleave", function() { updateCenter(0); });
-        });
-      })();
-
-      // Projects slider + panel
-      (function() {
-        var slider = document.getElementById("projSlider");
-        if (!slider) return;
-        var cards = Array.from(slider.querySelectorAll(".slider-card"));
-        var panels = Array.from(document.querySelectorAll(".acc-item"));
-        if (cards.length === 0) return;
-
-        function select(index) {
-          cards.forEach(function(c, i) {
-            c.classList.toggle("active", i === index);
-          });
-          panels.forEach(function(p, i) {
-            p.classList.toggle("open", i === index);
-          });
-          var card = cards[index];
-          if (card) {
-            var left = card.offsetLeft - slider.clientWidth / 2 + card.clientWidth / 2;
-            slider.scrollTo({ left: Math.max(0, left), behavior: "smooth" });
-          }
-        }
-
-        cards.forEach(function(card, i) {
-          card.addEventListener("click", function() { select(i); });
-        });
-
-        var prev = document.querySelector(".slider-prev");
-        var next = document.querySelector(".slider-next");
-        var current = 0;
-        if (prev) prev.addEventListener("click", function() {
-          current = (current - 1 + cards.length) % cards.length;
-          select(current);
-        });
-        if (next) next.addEventListener("click", function() {
-          current = (current + 1) % cards.length;
-          select(current);
-        });
-      })();
-
-      // File tree: collapse/expand folders
-      (function() {
-        document.querySelectorAll(".tree-folder > .tree-row").forEach(function(row) {
-          row.addEventListener("click", function(e) {
-            e.stopPropagation();
-            var folder = row.parentElement;
-            if (folder) folder.classList.toggle("collapsed");
-          });
-        });
-      })();
-    </script>
+    <BottomDock avatarUrl={avatarUrl} />
   </body>
 </html>

@@ -1,0 +1,59 @@
+---
+import clsx from "clsx";
+import { ArrowUpRight, BookOpenText, Braces, Database, Gamepad2, Terminal } from "lucide-react";
+import { twMerge } from "tailwind-merge";
+import type { Project } from "../data/portfolio";
+
+interface Props {
+  project: Project;
+  index: number;
+}
+
+const { project, index } = Astro.props;
+const ProjectIcon =
+  project.name === "everything"
+    ? Gamepad2
+    : project.name === "G-shell"
+      ? Terminal
+      : project.name === "Lumen"
+        ? BookOpenText
+        : project.name === "Galactic-database"
+          ? Database
+          : Braces;
+  const cardClass = twMerge(
+    clsx(
+      "project-card animate-in fade-in zoom-in duration-700",
+      `project-card--${project.size}`,
+      `project-card--${project.accent}`,
+    ),
+  );
+---
+
+<article class={cardClass}>
+  <div class="project-topline">
+    <span class="project-number">0{index} / 05</span>
+    <span class="project-icon"><ProjectIcon size={19} strokeWidth={1.7} aria-hidden="true" /></span>
+  </div>
+  <p class="project-category">{project.category}</p>
+  <h3>{project.name}</h3>
+  <p class="project-description">{project.description}</p>
+  <div class="project-architecture">
+    <span class="project-architecture-label">BUILT WITH</span>
+    <span>{project.stack.slice(0, 2).join(" / ")}</span>
+  </div>
+  <div class="project-footer">
+    <div class="project-tags" aria-label={`${project.name} tools and technologies`}>
+      {project.stack.map((technology) => <span class="project-tag">{technology}</span>)}
+    </div>
+    <div class="project-actions">
+      <a class="project-link" href={project.repo} target="_blank" rel="noreferrer">
+        Source code <ArrowUpRight size={15} strokeWidth={1.8} aria-hidden="true" />
+      </a>
+      {project.docs && (
+        <a class="project-link project-link-docs" href={project.docs} target="_blank" rel="noreferrer">
+          Docs <ArrowUpRight size={15} strokeWidth={1.8} aria-hidden="true" />
+        </a>
+      )}
+    </div>
+  </div>
+</article>

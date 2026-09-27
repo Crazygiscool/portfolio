@@ -1,0 +1,120 @@
+---
+interface ContributionDay {
+  date: string;
+  count: number;
+  level: number;
+}
+
+interface WakaStatItem {
+  name: string;
+  percent: number;
+  text: string;
+}
+
+interface WakaStatsData {
+  human_readable_range: string;
+  human_readable_total: string;
+  human_readable_daily_average: string;
+  days_minus_holidays: number;
+  best_day: { date: string; text: string } | null;
+  languages: WakaStatItem[];
+  editors: WakaStatItem[];
+  operating_systems: WakaStatItem[];
+}
+
+interface WakaAllTimeData {
+  text: string;
+  daily_average: number;
+  range: { start_date: string };
+}
+
+interface Props {
+  weeks?: ContributionDay[][];
+  contributionTotal: number;
+  focus?: unknown[];
+  wakaTotal?: string;
+  wakaStats?: WakaStatsData | null;
+  wakaAllTimeStats?: WakaAllTimeData | null;
+}
+
+const { contributionTotal, wakaTotal, wakaStats, wakaAllTimeStats } = Astro.props;
+const breakdowns = wakaStats
+  ? [
+      { name: "Languages", items: wakaStats.languages },
+      { name: "Editors", items: wakaStats.editors },
+      { name: "Operating systems", items: wakaStats.operating_systems },
+    ]
+  : [];
+---
+
+<section class="activity-section" id="activity" aria-labelledby="activity-title">
+  <div class="activity-content page-shell">
+    <div class="activity-main">
+      <p class="section-eyebrow">03 / RECENT ACTIVITY</p>
+      <div class="activity-heading">
+        <h2 id="activity-title">Little things add up.</h2>
+        <span class="activity-label">PUBLIC / GITHUB</span>
+      </div>
+      <div class="activity-count">
+        <strong>{contributionTotal.toLocaleString()}</strong>
+        <span>public contributions this year</span>
+      </div>
+      <a class="activity-profile-link" href="https://github.com/crazygiscool" target="_blank" rel="noreferrer">
+        See what I've been up to <span aria-hidden="true">-&gt;</span>
+      </a>
+    </div>
+
+    <div class="focus-column wakatime-column">
+      <p class="section-eyebrow">WAKATIME / RECENT + ALL-TIME</p>
+      <div class="activity-heading">
+        <h2>Time spent making things.</h2>
+        <span class="activity-label">{wakaStats?.human_readable_range ?? "OPTIONAL"}</span>
+      </div>
+      {wakaStats ? (
+        <>
+          <div class="wakatime-summary-grid">
+            <div class="wakatime-metric">
+              <span>LAST 7 DAYS</span>
+              <strong>{wakaStats.human_readable_total}</strong>
+            </div>
+            <div class="wakatime-metric">
+              <span>DAILY AVERAGE</span>
+              <strong>{wakaStats.human_readable_daily_average}</strong>
+            </div>
+            <div class="wakatime-metric">
+              <span>ACTIVE DAYS</span>
+              <strong>{wakaStats.days_minus_holidays}</strong>
+            </div>
+            <div class="wakatime-metric">
+              <span>BEST DAY</span>
+              <strong>{wakaStats.best_day?.text ?? "-"}</strong>
+            </div>
+          </div>
+          {wakaAllTimeStats && (
+            <div class="wakatime-all-time">
+              <span>ALL TIME / SINCE {wakaAllTimeStats.range.start_date}</span>
+              <strong>{wakaAllTimeStats.text}</strong>
+              <span>{Math.round((wakaAllTimeStats.daily_average / 3600) * 10) / 10}h daily average</span>
+            </div>
+          )}
+          <div class="wakatime-breakdowns">
+            {breakdowns.map((group) => (
+              <div class="wakatime-breakdown">
+                <h3>{group.name}</h3>
+                {group.items.slice(0, 4).map((item) => (
+                  <div class="wakatime-row">
+                    <div class="wakatime-row-label"><span>{item.name}</span><span>{item.percent.toFixed(1)}%</span></div>
+                    <div class="wakatime-track"><span style={`width: ${Math.max(0, Math.min(100, item.percent))}%`}></span></div>
+                  </div>
+                ))}
+                {group.items.length === 0 && <span class="activity-note">No recent data</span>}
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p class="activity-note">{wakaTotal ? `Last week: ${wakaTotal}` : "WakaTime stats are not connected."}</p>
+      )}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,86 @@
+---
+import { Activity, Code2, LayoutGrid, Mail } from "lucide-react";
+
+const tabs = [
+  { id: "work", label: "Projects", Icon: LayoutGrid },
+  { id: "skills", label: "Skills & tools", Icon: Code2 },
+  { id: "activity", label: "Activity", Icon: Activity },
+  { id: "contact", label: "Contact", Icon: Mail },
+];
+
+interface Props {
+  avatarUrl: string;
+}
+
+const { avatarUrl } = Astro.props;
+---
+
+<div class="bottom-bar" aria-label="Portfolio shortcuts">
+  <a class="bottom-profile" href="#top" aria-label="Crazygiscool home">
+    <img src={avatarUrl} alt="" width="44" height="44" />
+  </a>
+  <nav class="bottom-dock" aria-label="Page sections">
+    {tabs.map(({ id, label, Icon }, index) => (
+      <a
+        class:list={["dock-item", index === 0 && "is-current"]}
+        href={`#${id}`}
+        data-section={id}
+        data-label={label}
+        title={label}
+        aria-label={label}
+        aria-current={index === 0 ? "location" : undefined}
+      >
+        <Icon size={21} strokeWidth={1.75} aria-hidden="true" />
+        <span class="dock-indicator" aria-hidden="true"></span>
+      </a>
+    ))}
+  </nav>
+  <a class="bottom-hello" href="mailto:crazygiscool@proton.me">
+    <span>Say hello</span>
+    <span class="hello-wave" role="img" aria-label="waving hand">👋</span>
+  </a>
+</div>
+
+<script>
+  const dockLinks = [...document.querySelectorAll<HTMLAnchorElement>(".dock-item")];
+  const sections = dockLinks
+    .map((link) => document.getElementById(link.dataset.section ?? ""))
+    .filter((section): section is HTMLElement => section !== null);
+
+  const setCurrent = (sectionId: string) => {
+    dockLinks.forEach((link) => {
+      const isCurrent = link.dataset.section === sectionId;
+      link.classList.toggle("is-current", isCurrent);
+      if (isCurrent) link.setAttribute("aria-current", "location");
+      else link.removeAttribute("aria-current");
+    });
+  };
+
+  dockLinks.forEach((link) => {
+    link.addEventListener("click", () => setCurrent(link.dataset.section ?? "work"));
+  });
+
+  let updateQueued = false;
+  const updateFromViewport = () => {
+    if (updateQueued) return;
+    updateQueued = true;
+
+    requestAnimationFrame(() => {
+      updateQueued = false;
+      const readingLine = window.innerHeight * 0.52;
+      let currentSection = sections[0];
+
+      for (const section of sections) {
+        if (section.getBoundingClientRect().top <= readingLine) currentSection = section;
+        else break;
+      }
+
+      if (currentSection) setCurrent(currentSection.id);
+    });
+  };
+
+  window.addEventListener("scroll", updateFromViewport, { passive: true });
+  window.addEventListener("resize", updateFromViewport);
+  window.addEventListener("pageshow", updateFromViewport);
+  updateFromViewport();
+</script>

@@ -1,0 +1,35 @@
+---
+import { Code2, Wrench } from "lucide-react";
+
+interface Props {
+  languages: string[];
+  tools: string[];
+}
+
+const { languages, tools } = Astro.props;
+const groups = [
+  { name: "Languages", index: "01", items: languages, Icon: Code2 },
+  { name: "Tools & topics", index: "02", items: tools, Icon: Wrench },
+];
+---
+
+<div class="expertise-grid skills-tools-grid">
+  {groups.map(({ name, index, items, Icon }) => (
+    <article class="skill-group">
+      <div class="skill-heading">
+        <div class="skill-title-wrap">
+          <span class="skill-icon"><Icon size={17} strokeWidth={1.7} aria-hidden="true" /></span>
+          <h3>{name}</h3>
+        </div>
+        <span class="skill-index">{index}</span>
+      </div>
+      {items.length > 0 ? (
+        <div class="skill-list">
+          {items.map((item) => <span class="skill-pill">{item}</span>)}
+        </div>
+      ) : (
+        <p class="skills-empty">GitHub metadata is temporarily unavailable.</p>
+      )}
+    </article>
+  ))}
+</div>

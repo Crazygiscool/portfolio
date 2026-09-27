@@ -1,4 +1,6 @@
-const GITHUB_USER = "crazygiscool";
+import { load } from "cheerio";
+
+const GITHUB_USER = import.meta.env.GITHUB_USERNAME?.trim() || "crazygiscool";
 
 const ghToken = import.meta.env.GITHUB_TOKEN as string | undefined;
 const authHeaders: Record<string, string> = ghToken
@@ -38,6 +40,141 @@ export interface FileNode {
   name: string;
   type: "folder" | "file";
   children: FileNode[];
+}
+
+export interface GitHubSignals {
+  languages: string[];
+  tools: string[];
+}
+
+export interface GitHubContributionDay {
+  date: string;
+  count: number;
+  level: number;
+}
+
+interface GitHubSignalRepo {
+  fork?: boolean;
+  language?: string | null;
+  topics?: string[];
+}
+
+const hiddenTopics = [
+  "crazygiscool",
+  "ahsoka",
+  "starwars",
+  "awesome-list",
+  "wiki",
+  "browser",
+  "artificial-intelligence",
+  "machine-learning",
+  "deep-learning",
+  "voice-cloning",
+  "text-to-speech",
+  "openwakeword",
+  "pytorch",
+  "huggingface",
+  "transformer",
+  "genai",
+  "llm",
+];
+
+function mostUsed(values: string[], limit: number): string[] {
+  const counts = new Map<string, number>();
+  values.forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
+  return [...counts.entries()]
+    .sort(([leftName, leftCount], [rightName, rightCount]) => rightCount - leftCount || leftName.localeCompare(rightName))
+    .slice(0, limit)
+    .map(([name]) => name);
+}
+
+function formatTopic(topic: string): string {
+  return topic
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+export async function fetchGitHubContributionWeeks(
+  username: string = GITHUB_USER,
+): Promise<(GitHubContributionDay | null)[][]> {
+  try {
+    const response = await fetch(
+      `https://github.com/users/${encodeURIComponent(username)}/contributions`,
+      {
+        headers: { Accept: "text/html", "User-Agent": "Crazygiscool-Portfolio" },
+        signal: AbortSignal.timeout(6000),
+      },
+    );
+    if (!response.ok) return [];
+
+    const $ = load(await response.text());
+    const graph = $(".ContributionCalendar-grid").first();
+    if (!graph.length) return [];
+
+    const tooltipCounts = new Map<string, number>();
+    $("tool-tip[for]").each((_, tooltip) => {
+      const targetId = $(tooltip).attr("for");
+      const text = $(tooltip).text().trim();
+      const countMatch = text.match(/^([\d,]+) contribution/i);
+      if (targetId) {
+        tooltipCounts.set(targetId, countMatch ? Number(countMatch[1].replace(/,/g, "")) : 0);
+      }
+    });
+
+    const weeks: (GitHubContributionDay | null)[][] = [];
+    graph.find("tbody tr").each((dayIndex, row) => {
+      if (dayIndex >= 7) return;
+      $(row).children("td").each((cellIndex, element) => {
+        if (cellIndex === 0) return;
+        const weekIndex = cellIndex - 1;
+        const cell = $(element);
+        const date = cell.attr("data-date");
+        const targetId = cell.attr("id");
+
+        if (!weeks[weekIndex]) weeks[weekIndex] = Array(7).fill(null);
+        if (!date) return;
+
+        weeks[weekIndex][dayIndex] = {
+          date,
+          count: targetId ? tooltipCounts.get(targetId) ?? 0 : 0,
+          level: Number(cell.attr("data-level") ?? 0),
+        };
+      });
+    });
+
+    return weeks.filter((week) => week.some((day) => day !== null));
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchGitHubSignals(): Promise<GitHubSignals> {
+  try {
+    const response = await fetch(
+      `https://api.github.com/users/${GITHUB_USER}/repos?type=owner&sort=pushed&per_page=100`,
+      { headers: authHeaders, signal: AbortSignal.timeout(4000) },
+    );
+    if (!response.ok) return { languages: [], tools: [] };
+
+    const repositories = (await response.json()) as GitHubSignalRepo[];
+    if (!Array.isArray(repositories)) return { languages: [], tools: [] };
+
+    const ownedRepos = repositories.filter((repo) => !repo.fork);
+    const languages = mostUsed(
+      ownedRepos.map((repo) => repo.language ?? "").filter(Boolean),
+      10,
+    );
+    const topics = mostUsed(
+      ownedRepos
+        .flatMap((repo) => repo.topics ?? [])
+        .filter((topic) => !hiddenTopics.some((hidden) => topic.toLowerCase().includes(hidden))),
+      14,
+    ).map(formatTopic);
+
+    return { languages, tools: topics };
+  } catch {
+    return { languages: [], tools: [] };
+  }
 }
 
 export async function fetchRepos(): Promise<Repo[]> {
