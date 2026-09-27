@@ -49,6 +49,11 @@ const ProjectIcon =
       <a class="project-link" href={project.repo} target="_blank" rel="noreferrer">
         Source code <ArrowUpRight size={15} strokeWidth={1.8} aria-hidden="true" />
       </a>
+      {project.demo && (
+        <a class="project-link project-link-demo" href={project.demo} target="_blank" rel="noreferrer">
+          Live demo <ArrowUpRight size={15} strokeWidth={1.8} aria-hidden="true" />
+        </a>
+      )}
       {project.docs && (
         <a class="project-link project-link-docs" href={project.docs} target="_blank" rel="noreferrer">
           Docs <ArrowUpRight size={15} strokeWidth={1.8} aria-hidden="true" />

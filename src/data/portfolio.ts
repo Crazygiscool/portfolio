@@ -1,6 +1,7 @@
 export interface Project {
   name: string;
   repo: string;
+  demo?: string;
   docs?: string;
   category: string;
   description: string;
@@ -49,6 +50,7 @@ export const projects: Project[] = [
   {
     name: "Galactic-database",
     repo: "https://github.com/Crazygiscool/Galactic-database",
+    demo: "https://galactic-database.vercel.app",
     category: "STAR WARS / WEB",
     description:
       "A frontend for exploring the Star Wars Databank and SWAPI, turning a galaxy of records into something browsable.",
