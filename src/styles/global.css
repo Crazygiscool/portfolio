@@ -450,7 +450,7 @@ h1, h2, h3, p { margin-top: 0; }
   position: fixed;
   z-index: 50;
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  left: 50%;
+  left: 52%;
   display: flex;
   align-items: center;
   justify-content: center;
